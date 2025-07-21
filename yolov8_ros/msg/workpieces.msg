@@ -1,0 +1,9 @@
+string name
+float64 center_x
+float64 center_y
+float64 height
+float64 width
+float64 conf
+int64 cls
+float64 depth
+float64 theta

@@ -1,0 +1,32 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/lj/project/ur_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/lj/project/ur_ws/src/aruco_ros/aruco/include/**",
+        "/home/lj/project/ur_ws/src/aruco_ros/aruco_ros/include/**",
+        "/home/lj/project/ur_ws/src/admittance/cartesian_algorithms/include/**",
+        "/home/lj/project/ur_ws/src/admittance/cartesian_position_controller/include/**",
+        "/home/lj/project/ur_ws/src/admittance/cartesian_velocity_controller/include/**",
+        "/home/lj/project/ur_ws/src/netft_utils/include/**",
+        "/home/lj/project/ur_ws/src/ur10_start/include/**",
+        "/home/lj/project/ur_ws/src/ur_kinematics/include/**",
+        "/home/lj/project/ur_ws/src/Universal_Robots_ROS_Driver/ur_robot_driver/include/**",
+        "/home/lj/project/ur_ws/src/vision_visp/visp_bridge/include/**",
+        "/home/lj/project/ur_ws/src/yolov8_ros/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

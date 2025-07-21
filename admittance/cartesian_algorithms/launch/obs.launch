@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<launch>
+  <!--
+      Launch file for the admittance controller
+  -->
+    <param name="color_intensity" value="0.8" />
+    <param name="scale_factor" value="2.5" />
+    <param name="height_boost" value="1.2" />
+  
+  <node pkg="cartesian_algorithms" name="obs" type="obs" output="screen"/>
+
+</launch>

@@ -1,0 +1,9 @@
+float64 x
+float64 y
+int32 cls
+---
+float64 x_r
+float64 y_r
+float64 depth
+float64 angle
+bool flag

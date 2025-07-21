@@ -1,0 +1,10 @@
+<launch>
+    <!-- 启动gazebo仿真 -->
+    <include file="$(find ur_gazebo)/launch/ur5.launch" />
+
+    <!-- 启动moveit 规划执行 -->
+    <include file="$(find ur5_moveit_config)/launch/ur5_moveit_planning_execution.launch" />
+
+    <!-- 启动moveit_rviz 可视化 -->
+    <include file="$(find ur5_moveit_config)/launch/moveit_rviz.launch" />
+</launch>
