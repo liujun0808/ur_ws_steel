@@ -30,11 +30,11 @@ class jodell_gripper():
         # self.log_gripper_info()
 
 test = jodell_gripper()
-time.sleep(2)
+# time.sleep(1)
+time.sleep(10)
 test.open_gripper()
-# time.sleep(10)
-
 # test.close_gripper()
+
 
 # pos = test.getPos()
 # distance = pos[0] * (-0.2021) + 51.53

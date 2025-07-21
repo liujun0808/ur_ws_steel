@@ -35,14 +35,6 @@
         <joint name="wrist_2_joint" value="1.57"/>
         <joint name="wrist_3_joint" value="0"/>
     </group_state>
-    <group_state name="home_cbf" group="manipulator">
-        <joint name="elbow_joint" value="-1.6510146299945276"/>
-        <joint name="shoulder_lift_joint" value="-1.3374231497394007"/>
-        <joint name="shoulder_pan_joint" value="1.7783927917480469"/>
-        <joint name="wrist_1_joint" value="-1.7148726622210901"/>
-        <joint name="wrist_2_joint" value="1.5862054824829102"/>
-        <joint name="wrist_3_joint" value="0.190845787525177"/>
-    </group_state>
     <group_state name="home" group="manipulator">
         <joint name="elbow_joint" value="-1.483529864"/>
         <joint name="shoulder_lift_joint" value="-1.483529864"/>
@@ -51,14 +43,31 @@
         <joint name="wrist_2_joint" value="1.588249619"/>
         <joint name="wrist_3_joint" value="0.00"/>
     </group_state>
-    <group_state name="zero" group="manipulator">
-        <joint name="elbow_joint" value="0"/>
-        <joint name="shoulder_lift_joint" value="-1.57"/>
-        <joint name="shoulder_pan_joint" value="0"/>
-        <joint name="wrist_1_joint" value="-1.57"/>
-        <joint name="wrist_2_joint" value="0"/>
-        <joint name="wrist_3_joint" value="0.00"/>
+    <group_state name="home_hori" group="manipulator">
+        <joint name="elbow_joint" value="-1.289623784"/>
+        <joint name="shoulder_lift_joint" value="-1.7959438"/>
+        <joint name="shoulder_pan_joint" value="1.243372559"/>
+        <joint name="wrist_1_joint" value="-1.634151779"/>
+        <joint name="wrist_2_joint" value="1.582140967"/>
+        <joint name="wrist_3_joint" value="-0.336324947"/>
     </group_state>
+    <group_state name="home_ver" group="manipulator">
+        <joint name="elbow_joint" value="-1.333431549"/>
+        <joint name="shoulder_lift_joint" value="-1.794547537"/>
+        <joint name="shoulder_pan_joint" value="1.243198026"/>
+        <joint name="wrist_1_joint" value="-1.591740278"/>
+        <joint name="wrist_2_joint" value="1.581966434"/>
+        <joint name="wrist_3_joint" value="-0.336324947"/>
+    </group_state>
+    <group_state name="home_node" group="manipulator">
+        <joint name="elbow_joint" value="-1.658586388"/>
+        <joint name="shoulder_lift_joint" value="-1.492954642"/>
+        <joint name="shoulder_pan_joint" value="1.148601181"/>
+        <joint name="wrist_1_joint" value="-1.569574596"/>
+        <joint name="wrist_2_joint" value="1.581966434"/>
+        <joint name="wrist_3_joint" value="-0.430747259"/>
+    </group_state>
+    
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="fixed_base" type="fixed" parent_frame="world" child_link="base_link"/>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->

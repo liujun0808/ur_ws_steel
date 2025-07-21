@@ -169,12 +169,8 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  scripts/sub.py
   scripts/yolov8_pub.py
-  scripts/test.py
   scripts/jodell_gripper.py
-  scripts/tcp_force.py 
-  scripts/test_calibration.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

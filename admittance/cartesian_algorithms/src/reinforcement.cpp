@@ -1,6 +1,8 @@
 #include "cartesian_algorithms/admittance/reinforcement.h"
 #include "geometry_msgs/PointStamped.h"
 
+double camere2flat[3] = {558.0, 0.0, 0.0};
+
 // 构造
 reinforcement::reinforcement(ros::NodeHandle &n):nh_(n),arm("manipulator"),loop_rate(125),flag(0),ibvs_data(13) 
 {
@@ -30,12 +32,12 @@ reinforcement::reinforcement(ros::NodeHandle &n):nh_(n),arm("manipulator"),loop_
     gripper_open();
     
     // 初始化
-    cam_k<<607.5791016,0.0,313.58734131,  // D435i
-            0.0,607.50048828,251.40821838,
-            0.0,0.0,1;
-    // cam_k<<606.1358642578125,0.0,317.83746337890625, // D435
-    //     0.0,604.9152221679688,244.45687866210938,
-    //     0.0,0.0,1;
+    // cam_k<<607.5791016,0.0,313.58734131,  // D435i
+    //         0.0,607.50048828,251.40821838,
+    //         0.0,0.0,1;
+    cam_k<<606.1358642578125,0.0,317.83746337890625, // D435
+        0.0,604.9152221679688,244.45687866210938,
+        0.0,0.0,1;
     eye_to_hand<<0.99921847,0.02002815,-0.03407832,-0.01114759,
                 -0.01984378,0.99978662,0.0057399,-0.10696188,
                 0.03418601,-0.00505917,0.99940268,-0.13623781,
@@ -79,13 +81,13 @@ void reinforcement::CB_get_workpieces(const yolov8_ros::objectArrayConstPtr msg)
     // 按类别分组
     for (size_t i = 0; i < count; i++)
     {
-        if (msg->objects[i].cls == 0){ hor.objects.push_back(msg->objects[i]);} 
-        if (msg->objects[i].cls == 1){ node.objects.push_back(msg->objects[i]);}
-        if (msg->objects[i].cls == 2){ ver.objects.push_back(msg->objects[i]);}
+        // if (msg->objects[i].cls == 0){ hor.objects.push_back(msg->objects[i]);} 
+        // if (msg->objects[i].cls == 1){ node.objects.push_back(msg->objects[i]);}
+        // if (msg->objects[i].cls == 2){ ver.objects.push_back(msg->objects[i]);}
         // 金属
-        // if (msg->objects[i].cls == 2){ hor.objects.push_back(msg->objects[i]);} 
-        // if (msg->objects[i].cls == 0){ node.objects.push_back(msg->objects[i]);}
-        // if (msg->objects[i].cls == 1){ ver.objects.push_back(msg->objects[i]);}
+        if (msg->objects[i].cls == 0){ node.objects.push_back(msg->objects[i]);}
+        if (msg->objects[i].cls == 1){ ver.objects.push_back(msg->objects[i]);}
+        if (msg->objects[i].cls == 2){ hor.objects.push_back(msg->objects[i]);} 
     }
 
 
@@ -139,31 +141,31 @@ void reinforcement::run()
     ros::AsyncSpinner spinner(1);
     spinner.start();
     // 位姿初始化
-    arm.setNamedTarget("home");
-    arm.move();
-
+    arm.setNamedTarget("home_node");arm.move();
     gripper_open();
     int i = 0;
 
-    while (ros::ok() && (hor.objects.size()!=4 || node.objects.size()!=4 || ver.objects.size()!=4))
-    {
-        std::cout<<"hor size:"<< hor.objects.size()<<std::endl;
-        std::cout<<"node size:"<< node.objects.size()<<std::endl;
-        std::cout<<"ver size:"<< ver.objects.size()<<std::endl;
-        ros::Duration(1).sleep();
-    }
+    // 第一层node
+    grasp_flag_msg.flag = true;
+    grasp_flag_msg.cls = 0;
+    grasp_flag_msg.conf = 0.8;
+    grasp_flag_pub.publish(grasp_flag_msg);
+    while (ros::ok() && (node.objects.size()!=8)) { std::cout<<"node size:"<< node.objects.size()<<std::endl;ros::Duration(1).sleep();}
     std::cout<<"输入1开始,其他退出"<<std::endl;
     std::cin>>i;
-    if (i != 1)
-    {
-        return;
-    }
-    
-    // 第一层node
-    // first_layer_node();
-    // std::cout<<"首个node的坐标"<<first_node<<std::endl;
+    if (i != 1)return;
+    first_layer_node();
+    std::cout<<"首个node的坐标"<<first_node<<std::endl;
+
+
 
     // 第一层horizontal
+    // arm.setNamedTarget("home_hori");arm.move();
+    // grasp_flag_msg.flag = true;
+    // grasp_flag_msg.cls = 2;
+    // grasp_flag_msg.conf = 0.8;
+    // grasp_flag_pub.publish(grasp_flag_msg);
+    // while (ros::ok() && (hor.objects.size()!=8 )){std::cout<<"hor size:"<< hor.objects.size()<<std::endl;ros::Duration(1).sleep();}
     // first_layer_hori();
 
     // 第一层vertical
@@ -175,13 +177,13 @@ void reinforcement::run()
     // 第二层horizontal
     // seconde_layer_hori();
 
+    // arm.setNamedTarget("home_node");arm.move();
 
 }
 
 void reinforcement::first_layer_node()
 {   
     gripper_open();
-    std::size_t node_num = node.objects.size();
     vector3d node_in_pixel;
     std::vector<geometry_msgs::Pose> waypoints;
     geometry_msgs::Pose target_pose;
@@ -189,7 +191,7 @@ void reinforcement::first_layer_node()
     center.request.x = 320;
     center.request.y = 240;
     center.request.cls = 0;
-    // std::size_t y=0;
+    double delta_x,delta_y;
     for (size_t i = 0; i < 2; i++)
     {   
         // 初始位置 姿态获取
@@ -202,9 +204,9 @@ void reinforcement::first_layer_node()
         target_pose.orientation.z = tool_to_base_qua.getZ();
         target_pose.orientation.w = tool_to_base_qua.getW();
 
-        if (node.objects[i].depth < 100){node.objects[i].depth = 653;std::cout<<"深度已经补偿"<<std::endl;} // 653 home下相机距离平面的高度
+        if (node.objects[i].depth < 100){node.objects[i].depth = camere2flat[0];std::cout<<"深度已经补偿"<<std::endl;} // camere2flat home下相机距离平面的高度
         std::cout<<node.objects[i].depth<<std::endl;
-        node_in_pixel<<node.objects[i].center_x,node.objects[i].center_y,653;
+        node_in_pixel<<node.objects[i].center_x,node.objects[i].center_y,camere2flat[0];
         camera_to_base(node_in_pixel);
 
         // 移动至节点上方进行二次拍照
@@ -216,52 +218,70 @@ void reinforcement::first_layer_node()
         waypoints.clear();
         client_sec_img.call(center);
         ros::Duration sleep(1);
+        
+        int y=0;
+        std::cout<<"输入1开始,其他退出"<<std::endl;
+        std::cin>>y;
+        if (y != 1)
+        {   
+            return;
+        }
+
         // 判断二次拍照是否计算成功
         if (!center.response.flag){std::cout<<"二次拍照计算失败"<<std::endl;return;}
-        if (center.response.depth < 100){center.response.depth = 653;std::cout<<"深度已经补偿"<<std::endl;} // 593 home下相机距离node的高度
+        center.response.depth = camere2flat[0];std::cout<<"深度已经补偿"<<std::endl;// 593 home下相机距离node的高度
         std::cout<<"response结果:"<<center.response<<std::endl;
         // 将像素坐标进行更新
-        node_in_pixel<<center.response.x_r,center.response.y_r,653;
+        node_in_pixel<<center.response.x_r,center.response.y_r,camere2flat[0];
         camera_to_base(node_in_pixel);
         std::cout<<"二次拍照后的坐标:"<<workp_in_base_link<<std::endl;
         
         // 旋转抓取姿态
-        // geometry_msgs::Quaternion orientation_temp = target_pose.orientation;
-        // target_pose.orientation = rotation_grasp(center.response.angle,1);
+        geometry_msgs::Quaternion orientation_temp = target_pose.orientation;
+        target_pose.orientation = rotation_grasp(center.response.angle,1);
+        // 0:-0.006 -0.003; 1: +0.0025 -0.0063
+        switch (i)
+        {
+        case 0:
+            {delta_x = -0.001; delta_y = -0.008;}break;
+        case 1:
+            {delta_x = 0.0025; delta_y = -0.0063;}break;
+        default:
+            break;
+        }
         // 节点抓放
-        target_pose.position.x = workp_in_base_link[0]-0.0152;
+        target_pose.position.x = workp_in_base_link[0] +delta_x;
         waypoints.push_back(target_pose);
-        target_pose.position.y = workp_in_base_link[1]-0.0232;
+        target_pose.position.y = workp_in_base_link[1] +delta_y;
         waypoints.push_back(target_pose);
-        target_pose.position.z = 0.06;
+        target_pose.position.z = 0.052;
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
 // 测试++++++++++++++++++++++++++
         // int y=0;
-        // std::cout<<"输入1开始,其他退出"<<std::endl;
-        // std::cin>>y;
-        // if (y != 1)
-        // {   
-        //     return;
-        // }
+        std::cout<<"输入1开始,其他退出"<<std::endl;
+        std::cin>>y;
+        if (y != 1)
+        {   
+            return;
+        }
 // 测试++++++++++++++++++++++++++++++
         gripper_close();
         sleep.sleep();
-        // target_pose.orientation = orientation_temp; // 变化为原来的姿态
-        target_pose.position.z += (0.15+0.095);
+        target_pose.orientation = orientation_temp; // 变化为原来的姿态
+        target_pose.position.z += 0.2;
         waypoints.push_back(target_pose);
         // get_hole_pos(y);
         switch (i)
         {
         case 0:
             {
-            target_pose.position.x -= 0.5;
-            // target_pose.position.x -= 0.2;
+            target_pose.position.x -= 0.550;
             waypoints.push_back(target_pose);
             target_pose.position.y += 0.1;
             waypoints.push_back(target_pose);
-            target_pose.position.z -= 0.147; // 0.147
+            target_pose.position.z -= (0.2-0.155); // 
             waypoints.push_back(target_pose);
             moveCartesian(waypoints);
             waypoints.clear();
@@ -288,7 +308,7 @@ void reinforcement::first_layer_node()
             waypoints.push_back(target_pose);
             target_pose.position.y = first_node[1]-0.192;
             waypoints.push_back(target_pose);
-            target_pose.position.z -= 0.147;
+            target_pose.position.z -= (0.2-0.155);
             waypoints.push_back(target_pose);
             moveCartesian(waypoints);
             waypoints.clear();
@@ -327,8 +347,7 @@ void reinforcement::first_layer_node()
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
-        arm.setNamedTarget("home");
-        arm.move();
+        arm.setNamedTarget("home_node");arm.move();
 // ************************
         // ros::Duration(10).sleep();
         // ft_bias_client.call(setBias_client);
@@ -365,9 +384,9 @@ void reinforcement::first_layer_hori()
         target_pose.orientation.z = tool_to_base_qua.getZ();
         target_pose.orientation.w = tool_to_base_qua.getW();
 
-        if (hor.objects[i].depth < 100){hor.objects[i].depth = 653;std::cout<<"深度已经补偿"<<std::endl;} 
+        if (hor.objects[i].depth < 100){hor.objects[i].depth = camere2flat[1];std::cout<<"深度已经补偿"<<std::endl;} 
         std::cout<<hor.objects[i].depth<<std::endl;
-        hori_in_pixel<<hor.objects[i].center_x,hor.objects[i].center_y,653;
+        hori_in_pixel<<hor.objects[i].center_x,hor.objects[i].center_y,camere2flat[1];
         camera_to_base(hori_in_pixel);
 
         // 移动至节点上方进行二次拍照
@@ -390,10 +409,10 @@ void reinforcement::first_layer_hori()
             client_sec_img.call(center);
             sleep.sleep();
         }
-        if (center.response.depth < 100){center.response.depth = 653;std::cout<<"深度已经补偿"<<std::endl;} 
+        if (center.response.depth < 100){center.response.depth = camere2flat[1];std::cout<<"深度已经补偿"<<std::endl;} 
         std::cout<<"response结果:"<<center.response<<std::endl;
         // 将像素坐标进行更新
-        hori_in_pixel<<center.response.x_r,center.response.y_r,653;
+        hori_in_pixel<<center.response.x_r,center.response.y_r,camere2flat[1];
         camera_to_base(hori_in_pixel);
         std::cout<<"二次拍照后的坐标:"<<workp_in_base_link<<std::endl;
         // 测试++++++++++++++++++++++++++
@@ -681,11 +700,11 @@ void reinforcement::first_layer_ver()
         sleep.sleep();
         // 判断二次拍照是否计算成功
         if (!center.response.flag){std::cout<<"二次拍照计算失败"<<std::endl;return;}
-        if (center.response.depth < 100){center.response.depth = 653;std::cout<<"深度已经补偿"<<std::endl;} 
+        if (center.response.depth < 100){center.response.depth = camere2flat[2];std::cout<<"深度已经补偿"<<std::endl;} 
         std::cout<<"response结果:"<<center.response<<std::endl;
 
         // 将像素坐标进行更新
-        ver_in_pixel<<center.response.x_r,center.response.y_r,653;
+        ver_in_pixel<<center.response.x_r,center.response.y_r,camere2flat[2];
         camera_to_base(ver_in_pixel);
         std::cout<<"二次拍照后的坐标:"<<workp_in_base_link<<std::endl;
         
@@ -850,9 +869,9 @@ void reinforcement::seconde_layer_node()
         target_pose.orientation.z = tool_to_base_qua.getZ();
         target_pose.orientation.w = tool_to_base_qua.getW();
 
-        if (node.objects[i].depth < 100){node.objects[i].depth = 653;std::cout<<"深度已经补偿"<<std::endl;} // 653 home下相机距离平面的高度
+        if (node.objects[i].depth < 100){node.objects[i].depth = camere2flat[0];std::cout<<"深度已经补偿"<<std::endl;} // camere2flat home下相机距离平面的高度
         std::cout<<node.objects[i].depth<<std::endl;
-        node2_in_pixel<<node.objects[i].center_x,node.objects[i].center_y,653;
+        node2_in_pixel<<node.objects[i].center_x,node.objects[i].center_y,camere2flat[0];
         camera_to_base(node2_in_pixel);
 
         // 移动至节点上方进行二次拍照
@@ -866,10 +885,10 @@ void reinforcement::seconde_layer_node()
         ros::Duration sleep(1);
         // 判断二次拍照是否计算成功
         if (!center.response.flag){std::cout<<"二次拍照计算失败"<<std::endl;return;}
-        if (center.response.depth < 100){center.response.depth = 653;std::cout<<"深度已经补偿"<<std::endl;} // 593 home下相机距离node的高度
+        if (center.response.depth < 100){center.response.depth = camere2flat[0];std::cout<<"深度已经补偿"<<std::endl;} // 593 home下相机距离node的高度
         std::cout<<"response结果:"<<center.response<<std::endl;
         // 将像素坐标进行更新
-        node2_in_pixel<<center.response.x_r,center.response.y_r,653;
+        node2_in_pixel<<center.response.x_r,center.response.y_r,camere2flat[0];
         camera_to_base(node2_in_pixel);
         std::cout<<"二次拍照后的坐标:"<<workp_in_base_link<<std::endl;
         
@@ -1017,9 +1036,9 @@ void reinforcement::seconde_layer_hori()
         target_pose.orientation.z = tool_to_base_qua.getZ();
         target_pose.orientation.w = tool_to_base_qua.getW();
 
-        if (hor.objects[i].depth < 100){hor.objects[i].depth = 653;std::cout<<"深度已经补偿"<<std::endl;} 
+        if (hor.objects[i].depth < 100){hor.objects[i].depth = camere2flat[1];std::cout<<"深度已经补偿"<<std::endl;} 
         std::cout<<hor.objects[i].depth<<std::endl;
-        hori_in_pixel<<hor.objects[i].center_x,hor.objects[i].center_y,653;
+        hori_in_pixel<<hor.objects[i].center_x,hor.objects[i].center_y,camere2flat[1];
         camera_to_base(hori_in_pixel);
 
         // 移动至节点上方进行二次拍照
@@ -1033,10 +1052,10 @@ void reinforcement::seconde_layer_hori()
         ros::Duration sleep(1);
         // 判断二次拍照是否计算成功
         if (!center.response.flag){std::cout<<"二次拍照计算失败"<<std::endl;return;}
-        if (center.response.depth < 100){center.response.depth = 653;std::cout<<"深度已经补偿"<<std::endl;} 
+        if (center.response.depth < 100){center.response.depth = camere2flat[1];std::cout<<"深度已经补偿"<<std::endl;} 
         std::cout<<"response结果:"<<center.response<<std::endl;
         // 将像素坐标进行更新
-        hori_in_pixel<<center.response.x_r,center.response.y_r,653;
+        hori_in_pixel<<center.response.x_r,center.response.y_r,camere2flat[1];
         camera_to_base(hori_in_pixel);
         std::cout<<"二次拍照后的坐标:"<<workp_in_base_link<<std::endl;
         
