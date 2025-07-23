@@ -19,7 +19,7 @@ class getBox():
         weight_path = '/home/lj/project/ur_ws/src/best_steel2.pt'
         image_topic = '/camera/color/image_raw'
         depth_topic = '/camera/aligned_depth_to_color/image_raw'
-        pub_topic = 'workpieces'
+        pub_topic = '/workpieces'
         conf = 0.25 # 置信度阈值
         self.visualize = True
         self.cv_bridge = cv_bridge.CvBridge()
@@ -31,7 +31,7 @@ class getBox():
         self.depth_img = Image()    # 深度图对象
         self.color_image = Image() # 彩图对象
         self.grasping = grasp_flag()
-        self.grasping.flag = False
+        self.grasping.flag = True
         self.grasping.cls = 0
         self.grasping.conf = 0.8
         
@@ -42,7 +42,7 @@ class getBox():
         self.sub_obs_piexl = rospy.Subscriber("obs_piexl",Float32MultiArray,self.obs_piexl,queue_size=5)
         self.sub_depth = rospy.Subscriber(depth_topic,Image,self.getDepth,queue_size=1)
         self.image_sub = rospy.Subscriber(image_topic,Image,self.callBack,queue_size=1,buff_size=2**24)
-        self.msg_pub = rospy.Publisher(pub_topic,objectArray,queue_size=1)
+        self.msg_pub = rospy.Publisher(pub_topic,objectArray,queue_size=10)
         self.ibvs_pub = rospy.Publisher('ibvs_data',Float64MultiArray,queue_size=5) # 发布ibvs数据
 
         self.ibvs_data = Float64MultiArray() # 发布ibvs数据
@@ -159,11 +159,12 @@ class getBox():
                 pt[1] += y1
             # response.x_r = center[0]
             # response.y_r = center[1]
-            print(rect[2])
+            
             if rect[1][0]<rect[1][1]:
                 response.angle = rect[2] - 90
             else:
                 response.angle = rect[2]
+            print(response.angle)
             response.flag = True
         else:
             response.flag = False
@@ -221,10 +222,11 @@ class getBox():
         self.rectify(results)
         img = results[0].plot()
         if self.grasping.flag == True:
-            self.comput_xy_angle(results)
-            print("222")
-            self.workpieceArray.objects.clear()
-            self.grasping.flag = False
+                self.comput_xy_angle(results)
+                self.workpieceArray.objects.clear()
+                self.grasping.flag = False
+        if self.ibvs_strat_flag == True:
+                self.comput_ibvs()
         cv2.namedWindow("results", cv2.WINDOW_NORMAL)
         cv2.imshow("results", img)
         cv2.waitKey(2)
@@ -315,44 +317,45 @@ class getBox():
     # 用于发送ibvs数据
     def  comput_ibvs(self):
         results_node=deepcopy(self.model.predict(self.color_image,show=False,conf=0.8,classes=[0],verbose=False))
-        img = results_node[0].plot()
-        # filtered_boxes = [box for box in results_node[0].boxes if box.cls == 0]
+        # filtered_boxes = [box for box in results_node[0].boxes if box.cls == 0]  
         # results_node[0].boxes = filtered_boxes
         boxes = results_node[0].boxes.cpu().numpy()
         self.ibvs_data.data.clear()
-        if boxes.cls.size == 1:
-            x1, y1, x2, y2 = map(int, boxes.xyxy[0])
-            # 用均值替代深度为0的点
-            # print(x1, y1, x2, y2)
-            tepm_x1 = x1
-            temp_y1 = y1
-            points = (self.depth_img[(temp_y1-1),(tepm_x1-50):tepm_x1])
-            points_ = points[points > 0]
-            depth_depth = np.mean(points_) if len(points_) > 0 else 0
-            # points = [self.depth_img[y1,x1-1],self.depth_img[y2,x1-1],self.depth_img[y1,x2-1],self.depth_img[y2,x2-1]]
-            # non_zero_values = [p for p in points if p != 0]
-            # avg_value = sum(non_zero_values) / len(non_zero_values)
-            # new_points = [p if p != 0 else avg_value for p in points]
-
-            self.ibvs_data.data.append(x1)
-            self.ibvs_data.data.append(y1)
-
-            self.ibvs_data.data.append(x2)
-            self.ibvs_data.data.append(y1)
-
-            self.ibvs_data.data.append(x1)
-            self.ibvs_data.data.append(y2)
-
-            self.ibvs_data.data.append(x2)
-            self.ibvs_data.data.append(y2)
-
-            # self.ibvs_data.data.append(new_points[0]*0.001)
-            self.ibvs_data.data.append(depth_depth*0.001)
-            self.ibvs_data.data.append(depth_depth*0.001)
-            self.ibvs_data.data.append(depth_depth*0.001)
-            self.ibvs_data.data.append(depth_depth*0.001)
-        else:
+        closest_bbox = None
+        max_area = float('-inf')
+        for box in boxes:  # 遍历每一个检测框，提取距离中心最近的检测框坐
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            box_area = (x2-x1) * (y2-y1)
+            if box_area > max_area:
+                max_area = box_area
+                closest_bbox = box
+        if closest_bbox == None :
             self.ibvs_data.data = [-1]
+        
+        x1, y1, x2, y2 = map(int, closest_bbox.xyxy[0])
+        # 用均值替代深度为0的点
+        tepm_x1 = x1
+        temp_y1 = y1
+        points = (self.depth_img[(temp_y1-1),(tepm_x1-50):tepm_x1])
+        points_ = points[points > 0]
+        depth_depth = np.mean(points_) if len(points_) > 0 else 0
+
+        self.ibvs_data.data.append(x1)
+        self.ibvs_data.data.append(y1)
+
+        self.ibvs_data.data.append(x2)
+        self.ibvs_data.data.append(y1)
+
+        self.ibvs_data.data.append(x1)
+        self.ibvs_data.data.append(y2)
+
+        self.ibvs_data.data.append(x2)
+        self.ibvs_data.data.append(y2)
+        # self.ibvs_data.data.append(new_points[0]*0.001)
+        self.ibvs_data.data.append(depth_depth*0.001)
+        self.ibvs_data.data.append(depth_depth*0.001)
+        self.ibvs_data.data.append(depth_depth*0.001)
+        self.ibvs_data.data.append(depth_depth*0.001)
         self.ibvs_pub.publish(self.ibvs_data)
         # cv2.imshow('ibvs_trajectory', img)
         # cv2.waitKey(2)
@@ -398,21 +401,6 @@ class getBox():
 
             contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-            # cv2.imshow("gray", gray)
-            # cv2.moveWindow("gray", 50, 50)
-            # cv2.imshow("enhanced", enhanced)
-            # cv2.moveWindow("enhanced", 400, 50)
-            # cv2.imshow("Edges", edges)
-            # cv2.moveWindow("Edges", 50, 300)
-            # cv2.imshow("closed", closed)
-            # cv2.moveWindow("closed", 400, 300)
-            # cv2.waitKey(0)
-            # cv2.destroyAllWindows()
-
-            # gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-            # _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-            # contours, _ = cv2.findContours(adaptive_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
             if len(contours) > 0:
                 # 找到最大的轮廓
                 c = max(contours, key=cv2.contourArea)
@@ -428,7 +416,7 @@ class getBox():
                     # 将每个顶点坐标转换为基于整张图像的绝对坐标
                     pt[0] += x1
                     pt[1] += y1
-                # cv2.drawContours(plot_image, [box_pts], 0, (0, 255, 0), 2)
+                cv2.drawContours(plot_image, [box_pts], 0, (0, 255, 0), 2)
                 # 可选：计算角度等信息
                 # if rect[1][0]<rect[1][1]:
                 #     angle = rect[2] - 90

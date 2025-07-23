@@ -27,6 +27,7 @@
 #include <ctime>
 #include <iomanip> 
 #include "cartesian_algorithms/admittance/ibvs.h"
+#include <visp3/core/vpCameraParameters.h>
 
 
 using namespace Eigen;
@@ -52,7 +53,7 @@ private:
     vector3d tool_in_base_link; // TCP到baselink的位置
     yolov8_ros::grasp_flag grasp_flag_msg; //抓取标志发布信息
     ros::Publisher grasp_flag_pub; // 抓取标志发布者
-    ros::Publisher admit_vel_pub; // 抓取标志发布者
+    ros::Publisher admit_vel_pub; 
     ros::Subscriber yolo_sub_state; // yolo消息订阅者
     ros::Subscriber sub_wrench_state_; // ft消息订阅者  
     ros::ServiceClient ft_bias_client; // ft传感器偏置客户端
@@ -80,6 +81,7 @@ private:
     std::time_t now;// 获取当前时间（秒）
     ibvs ibvs_node;
     bool ibvs_start;
+    std::vector<vpImagePoint> corners_pd_node1,corners_pd_node2;
 
 public:
     reinforcement(ros::NodeHandle &n); // 构造
@@ -106,12 +108,13 @@ public:
     static bool compare_by_center_x(const yolov8_ros::workpieces& obj1,const yolov8_ros::workpieces& obj2); // 获得工件的X像素坐标，用以排序
     void camera_to_base(vector3d p_); // 从像素坐标系转到base link下
     bool get_rotation_matrix(Matrix3d & rotation_matrix,vector3d & position_,tf::TransformListener & listener,std::string from_frame,  std::string to_frame);
-    void moveCartesian(std::vector<geometry_msgs::Pose> waypoints); // 笛卡尔路径
+    void moveCartesian(const std::vector<geometry_msgs::Pose>& waypoints,const double& max_v); // 笛卡尔路径 可设置最大速度
+    void moveCartesian(const std::vector<geometry_msgs::Pose>& waypoints); // 笛卡尔路径
     void admittance(vector3d &ft_dir,const double &threshold_z);// 导纳控制
     void changeController(std::string start, std::string stop);
     void rpy(double r,int i);
     void touch_hole();
-    void hole_finding();
+    void palce_hori(int index);
     void fixtrajectorytime(moveit_msgs::RobotTrajectory &trajectory); //修改笛卡尔轨迹
     // void get_hole_pos(double &y);
     bool space_arc_ver(geometry_msgs::Pose &target_pose); // 空间圆弧
@@ -120,7 +123,7 @@ public:
     void touch_ver();// 接触竖杆
     bool space_arc_node(geometry_msgs::Pose &target_pose);
     void nodeTouch_concret();// first node touch concrete
-    void cbf();
+    void CartesianVelCtrl(const Eigen::Vector3d& delta_xyz,const double & velocity);
 
     // 任务函数
     void run(); // 执行函数
