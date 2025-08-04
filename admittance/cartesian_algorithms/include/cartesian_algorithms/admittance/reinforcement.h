@@ -124,6 +124,7 @@ public:
     bool space_arc_node(geometry_msgs::Pose &target_pose);
     void nodeTouch_concret();// first node touch concrete
     void CartesianVelCtrl(const Eigen::Vector3d& delta_xyz,const double & velocity);
+    void space_arc_ver(int axis_);
 
     // 任务函数
     void run(); // 执行函数
