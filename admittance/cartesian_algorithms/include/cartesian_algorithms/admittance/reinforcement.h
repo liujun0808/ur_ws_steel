@@ -113,7 +113,7 @@ public:
     void admittance(vector3d &ft_dir,const double &threshold_z);// 导纳控制
     void changeController(std::string start, std::string stop);
     void rpy(double r,int i);
-    void touch_hole();
+    double touch_hole(Eigen::Vector3d &delta_xyz,double velocity);
     void palce_hori(int index);
     void fixtrajectorytime(moveit_msgs::RobotTrajectory &trajectory); //修改笛卡尔轨迹
     // void get_hole_pos(double &y);

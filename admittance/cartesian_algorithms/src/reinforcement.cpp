@@ -50,10 +50,11 @@ reinforcement::reinforcement(ros::NodeHandle &n):nh_(n),arm("manipulator"),loop_
     workp_in_tool.setZero();
     tool_to_base_link.setZero();
     tool_in_base_link.setZero();
-    // first_node.setZero();
+    first_node.setZero();
+    first_node<<-0.329214 , 0.707703  , 0.18007;
     seconde_node.setZero();
     // seconde_node<<0.12347,0.8365,0.270;
-    first_node<<-0.3469,0.7475,0.183054;
+    // first_node<<-0.3469,0.7475,0.183054;
     grasp_flag_msg.flag = false;
     // M 改变调节时间，且M太大会振荡，调节时间会加长；D改变超调，D越大超调越小但调节时间也会加长；K越大稳态误差越小（但在自适应变导纳中不使用K）
     M_<<10.0,0.0,0.0,
@@ -147,11 +148,9 @@ void reinforcement::run()
     ros::Duration sleep1(1);
     ros::AsyncSpinner spinner(1);
     spinner.start();
-    // 位姿初始化
     arm.setNamedTarget("home_node");arm.move();
-    sleep1.sleep();
-    return;
-// ------------------------test-----------------------
+    // 位姿初始化
+    // ------------------------test-----------------------
     // get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
     // std::cout<<tool_in_base_link.transpose()<<std::endl;
     // Eigen::Vector3d delta_xyz(0.0,0.0,0.0);
@@ -179,31 +178,31 @@ void reinforcement::run()
     int i = 0;
 
     // 第一层node
-    // while (ros::ok() && (node.objects.size()!=8)) { std::cout<<"node size:"<< node.objects.size()<<std::endl;ros::Duration(1).sleep();}
-    // std::cout<<"输入1开始,其他退出"<<std::endl;
-    // std::cin>>i;
-    // if (i != 1)return;
-    // first_layer_node();
-    // std::cout<<"首个node的坐标"<<first_node<<std::endl;
+    while (ros::ok() && (node.objects.size()!=8)) { std::cout<<"node size:"<< node.objects.size()<<std::endl;ros::Duration(1).sleep();}
+    std::cout<<"输入1开始,其他退出"<<std::endl;
+    std::cin>>i;
+    if (i != 1)return;
+    first_layer_node();
+    std::cout<<"首个node的坐标"<<first_node.transpose()<<std::endl;
 
 
 
     // 第一层horizontal
-    // arm.setNamedTarget("home_hori");arm.move();
-    // grasp_flag_msg.flag = true;
-    // grasp_flag_msg.cls = 2;
-    // grasp_flag_msg.conf = 0.1;
-    // grasp_flag_pub.publish(grasp_flag_msg);
-    // while (ros::ok() && (hor.objects.size()!=8 )){
-    //     std::cout<<"hor size:"<< hor.objects.size()<<std::endl;
-    //     hor.objects.clear();
-    //     grasp_flag_pub.publish(grasp_flag_msg);
-    //     ros::Duration(1).sleep();
-    //     }
-    // std::cout<<"输入1开始,其他退出"<<std::endl;
-    // std::cin>>i;
-    // if (i != 1)return;
-    // first_layer_hori();
+    arm.setNamedTarget("home_hori");arm.move();
+    grasp_flag_msg.flag = true;
+    grasp_flag_msg.cls = 2;
+    grasp_flag_msg.conf = 0.1;
+    grasp_flag_pub.publish(grasp_flag_msg);
+    while (ros::ok() && (hor.objects.size()!=8 )){
+        std::cout<<"hor size:"<< hor.objects.size()<<std::endl;
+        hor.objects.clear();
+        grasp_flag_pub.publish(grasp_flag_msg);
+        ros::Duration(1).sleep();
+        }
+    std::cout<<"输入2开始,其他退出"<<std::endl;
+    std::cin>>i;
+    if (i != 2)return;
+    first_layer_hori();
 
     // 第一层vertical
     arm.setNamedTarget("home_ver");arm.move();
@@ -217,9 +216,9 @@ void reinforcement::run()
         grasp_flag_pub.publish(grasp_flag_msg);
         ros::Duration(1).sleep();
         }
-    std::cout<<"输入1开始,其他退出"<<std::endl;
+    std::cout<<"输入3开始,其他退出"<<std::endl;
     std::cin>>i;
-    if (i != 1)return;
+    if (i != 3)return;
     first_layer_ver();
 
     // 第二层node
@@ -276,13 +275,7 @@ void reinforcement::first_layer_node()
         }
         // 判断二次拍照是否计算成功
         if (!center.response.flag){std::cout<<"二次拍照计算失败"<<std::endl;return;}
-        int y=0;
-        std::cout<<"输入1开始,其他退出"<<std::endl;
-        std::cin>>y;
-        if (y != 1)
-        {   
-            return;
-        }
+
         center.response.depth = camere2flat[0];std::cout<<"深度已经补偿"<<std::endl;// 593 home下相机距离node的高度
         std::cout<<"response结果:"<<center.response<<std::endl;
         // 将像素坐标进行更新
@@ -299,11 +292,11 @@ void reinforcement::first_layer_node()
         case 0:
             {delta_x = -0.003; delta_y = -0.01;}break;
         case 1:
-            {delta_x = 0.00; delta_y = -0.0066;}break;
+            {delta_x = -0.003; delta_y = -0.01;}break;
         case 2:
-            {delta_x = 0.000; delta_y = -0.01;}break;
+            {delta_x = -0.003; delta_y = -0.01;}break;
         case 3:
-            {delta_x = 0.00; delta_y = -0.006;}break;
+            {delta_x = -0.006; delta_y = -0.006;}break;
         default:
             break;
         }
@@ -317,12 +310,13 @@ void reinforcement::first_layer_node()
         moveCartesian(waypoints);
         waypoints.clear();
 // 测试++++++++++++++++++++++++++
-        // int y=0;
+        int y=0;
         std::cout<<"输入1开始,其他退出"<<std::endl;
         std::cin>>y;
         if (y != 1)
         {   
-            return;
+            arm.setNamedTarget("home_node");arm.move();
+            continue;
         }
 // 测试++++++++++++++++++++++++++++++
         gripper_close();
@@ -333,68 +327,113 @@ void reinforcement::first_layer_node()
         moveCartesian(waypoints,0.01);
         waypoints.clear();
         sleep.sleep();
+        // switch (i)
+        // {
+        // case 0:
+        //     {
+        //     target_pose.position.y += 0.1;
+        //     waypoints.push_back(target_pose);
+        //     target_pose.position.x -= 0.410;
+        //     waypoints.push_back(target_pose);
+        //     // target_pose.position.z -= (0.2-0.155); 
+        //     // waypoints.push_back(target_pose);
+        //     moveCartesian(waypoints,0.01);
+        //     waypoints.clear();
+        //     }
+        //     break;
+        // case 1: {
+        //     target_pose.position.y = first_node[1]-0.192;
+        //     waypoints.push_back(target_pose);
+        //    target_pose.position.x = first_node[0];
+        //     waypoints.push_back(target_pose);
+        //     moveCartesian(waypoints,0.01);
+        //     waypoints.clear();
+        //     }
+        //     break;
+        // case 2:{
+        //     target_pose.position.y = first_node[1];
+        //     waypoints.push_back(target_pose);
+        //     target_pose.position.x = first_node[0]+0.192;
+        //     waypoints.push_back(target_pose);
+        //     moveCartesian(waypoints,0.01);
+        //     waypoints.clear();
+        //     }
+        //     break;
+        // case 3:{
+        //     target_pose.position.y = first_node[1]-0.192;
+        //     waypoints.push_back(target_pose);
+        //     target_pose.position.x = first_node[0]+0.192;
+        //     waypoints.push_back(target_pose);
+        //     moveCartesian(waypoints,0.01);
+        //     waypoints.clear();
+        //     }
+        //     break;
+        // default:
+        //     break;
+        // }
+        Eigen::Vector3d delta_xyz;
         switch (i)
         {
         case 0:
             {
-            target_pose.position.y += 0.1;
-            waypoints.push_back(target_pose);
-            target_pose.position.x -= 0.510;
-            waypoints.push_back(target_pose);
-            // target_pose.position.z -= (0.2-0.155); 
-            // waypoints.push_back(target_pose);
-            moveCartesian(waypoints,0.01);
-            waypoints.clear();
+            delta_xyz.setZero();
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            delta_xyz[0] = -0.5;
+            delta_xyz[1] =  0.1;
+            CartesianVelCtrl(delta_xyz,0.15);
 
             }
             break;
         case 1: {
-            target_pose.position.y = first_node[1]-0.192;
-            waypoints.push_back(target_pose);
-           target_pose.position.x = first_node[0];
-            waypoints.push_back(target_pose);
-            moveCartesian(waypoints,0.01);
-            waypoints.clear();
+            delta_xyz.setZero();
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            delta_xyz[0] = first_node[0] - tool_in_base_link[0];       
+            delta_xyz[1] = first_node[1]- 0.192- tool_in_base_link[1];
+            CartesianVelCtrl(delta_xyz,0.15);
             }
             break;
         case 2:{
-            target_pose.position.y = first_node[1];
-            waypoints.push_back(target_pose);
-            target_pose.position.x = first_node[0]+0.192;
-            waypoints.push_back(target_pose);
-            moveCartesian(waypoints,0.01);
-            waypoints.clear();
+            delta_xyz.setZero();
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            delta_xyz[0] = first_node[0]+0.192 - tool_in_base_link[0];       
+            delta_xyz[1] = first_node[1] - tool_in_base_link[1];
+            CartesianVelCtrl(delta_xyz,0.15);
             }
             break;
         case 3:{
-            target_pose.position.y = first_node[1]-0.192;
-            waypoints.push_back(target_pose);
-            target_pose.position.x = first_node[0]+0.192;
-            waypoints.push_back(target_pose);
-            moveCartesian(waypoints,0.01);
-            waypoints.clear();
+            delta_xyz.setZero();
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            delta_xyz[0] = first_node[0]+0.192 - tool_in_base_link[0];       
+            delta_xyz[1] = first_node[1]-0.192- tool_in_base_link[1];
+            CartesianVelCtrl(delta_xyz,0.15);
             }
             break;
         default:
             break;
         }
-        // 自适应导纳控制
-        vector3d ft_dir(0.0,0.0,7.0);   
-        changeController("joint_group_vel_controller","scaled_pos_joint_traj_controller");
-        ft_bias_client.call(setBias_client);
-        sleep.sleep();
-        admittance(ft_dir,0.5);//误差阈度 
-        changeController("scaled_pos_joint_traj_controller","joint_group_vel_controller"); // 启动-停止
-        // 记录第一个node放置的位置
-        if (i==0)
+        get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+        target_pose.position.x = tool_in_base_link[0];
+        target_pose.position.y = tool_in_base_link[1];
+        double error=0.0;
+        switch (i)
         {
-            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
-            first_node<<tool_in_base_link[0],tool_in_base_link[1],tool_in_base_link[2];
+        case 1 :error = 0.001;break;
+        case 2 :error = 0.001;break;
+        case 3 :error = 0.001;break;
+        default:break;
         }
+        target_pose.position.z = 0.180 - error;
+        waypoints.push_back(target_pose);
+        moveCartesian(waypoints,0.001);
+        waypoints.clear();
         sleep.sleep();
         gripper_open();
+        if (i == 0)
+        {
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            first_node  = tool_in_base_link;
+        }
         sleep.sleep();
-
         target_pose.position.z += 0.1;
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
@@ -458,13 +497,7 @@ void reinforcement::first_layer_hori()
         camera_to_base(hori_in_pixel);
         std::cout<<"二次拍照后的坐标:"<<workp_in_base_link<<std::endl;
         // 测试++++++++++++++++++++++++++
-            int m=0;
-            std::cout<<"输入1开始,其他退出"<<std::endl;
-            std::cin>>m;
-            if (m != 1)
-            {   
-                return;
-            }
+        int m=0;
         // 测试++++++++++++++++++++++++++++++
         // 旋转抓取姿态
         geometry_msgs::Quaternion orientation_temp = target_pose.orientation;
@@ -474,7 +507,7 @@ void reinforcement::first_layer_hori()
         waypoints.push_back(target_pose);
         target_pose.position.y = workp_in_base_link[1]-0.009;
         waypoints.push_back(target_pose);
-        target_pose.position.z = 0.005;
+        target_pose.position.z = 0.003;
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
@@ -538,16 +571,7 @@ void reinforcement::first_layer_hori()
             break;
         }
         // 测试++++++++++++++++++++++++++
-        std::cout<<"输入3开始放置,其他退出"<<std::endl;
-        std::cin>>m;
-        if (m != 3)
-        {   
-            return;
-        }
         palce_hori(i);
-        gripper_open();
-        sleep.sleep();
-        // 放置结束 回到初始位姿
         get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
         target_pose.position.x = tool_in_base_link[0];
         target_pose.position.y = tool_in_base_link[1];
@@ -556,6 +580,21 @@ void reinforcement::first_layer_hori()
         target_pose.orientation.y = tool_to_base_qua.getY();
         target_pose.orientation.z = tool_to_base_qua.getZ();
         target_pose.orientation.w = tool_to_base_qua.getW();
+        // target_pose.position.z -= 0.02;
+        // waypoints.push_back(target_pose);
+        // moveCartesian(waypoints);
+        // waypoints.clear();
+        gripper_open();
+        sleep.sleep();
+        // 放置结束 回到初始位姿
+        // get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+        // target_pose.position.x = tool_in_base_link[0];
+        // target_pose.position.y = tool_in_base_link[1];
+        // target_pose.position.z = tool_in_base_link[2];
+        // target_pose.orientation.x = tool_to_base_qua.getX();
+        // target_pose.orientation.y = tool_to_base_qua.getY();
+        // target_pose.orientation.z = tool_to_base_qua.getZ();
+        // target_pose.orientation.w = tool_to_base_qua.getW();
         target_pose.position.z += 0.1;
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
@@ -578,8 +617,8 @@ void reinforcement::first_layer_ver()
     double delta_y = 0.0;
     int j=0;
     // 初始位置 姿态获取
-    for (size_t i = 0; i < 1; i++)
-    {
+    for (size_t i = 0; i < 4; i++)
+    {   
         get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
         target_pose.position.x = tool_in_base_link[0];
         target_pose.position.y = tool_in_base_link[1];
@@ -622,11 +661,11 @@ void reinforcement::first_layer_ver()
         // 旋转抓取姿态
         geometry_msgs::Quaternion orientation_temp = target_pose.orientation;
         target_pose.orientation = rotation_grasp(center.response.angle,2);
-        target_pose.position.x = workp_in_base_link[0]-0.01;
+        target_pose.position.x = workp_in_base_link[0]-0.015;
         waypoints.push_back(target_pose);
-        target_pose.position.y = workp_in_base_link[1]-0.01;
+        target_pose.position.y = workp_in_base_link[1]-0.015;
         waypoints.push_back(target_pose);
-        target_pose.position.z = -0.0005;
+        target_pose.position.z = 0.000;
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
@@ -643,90 +682,99 @@ void reinforcement::first_layer_ver()
         sleep.sleep();
         // 提升
         Eigen::Vector3d delta_xyz(0.0,0.0,0.0);
-        // CartesianVelCtrl(delta_xyz,0.05);
-        // target_pose.position.z += 0.4;
-        // waypoints.push_back(target_pose);
-        // target_pose.position.y -= 0.1;
-        // target_pose.orientation = orientation_temp;
-        // waypoints.push_back(target_pose);
-        // moveCartesian(waypoints);
-        // waypoints.clear();
         arm.setNamedTarget("home_node");arm.move();
-        rpy(-1.570796327,2);
-        ros::Duration(1).sleep();
-        rpy(1.570796327,0);
-        
-        // get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
-        // target_pose.position.x = tool_in_base_link[0];
-        // target_pose.position.y = tool_in_base_link[1];
-        // target_pose.position.z = tool_in_base_link[2];
-        // target_pose.orientation.x = tool_to_base_qua.getX();
-        // target_pose.orientation.y = tool_to_base_qua.getY();
-        // target_pose.orientation.z = tool_to_base_qua.getZ();
-        // target_pose.orientation.w = tool_to_base_qua.getW();
         switch (i)
         {
         case 0:
             {
+            rpy(-1.570796327,2);
+            ros::Duration(1).sleep();
+            rpy(1.570796327,0);
             get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
-            delta_xyz[0] = first_node[0]-tool_in_base_link[0];
-            delta_xyz[1] =  first_node[1]-tool_in_base_link[1];
-            CartesianVelCtrl(delta_xyz,0.1);
-            // target_pose.position.x = first_node[0];
-            // waypoints.push_back(target_pose);
-            // target_pose.position.y =first_node[1];
-            // waypoints.push_back(target_pose);
-            // moveCartesian(waypoints);
-            // waypoints.clear();
-            // rpy(-1.570796327,2);
-            // ros::Duration(5).sleep();
-
-            // rpy(1.570796327,0);
-            // ros::Duration(5).sleep();
+            target_pose.position.x = tool_in_base_link[0];
+            target_pose.position.y = tool_in_base_link[1];
+            target_pose.position.z = tool_in_base_link[2];
+            target_pose.orientation.x = tool_to_base_qua.getX();
+            target_pose.orientation.y = tool_to_base_qua.getY();
+            target_pose.orientation.z = tool_to_base_qua.getZ();
+            target_pose.orientation.w = tool_to_base_qua.getW();   
+            target_pose.position.x = first_node[0]+0.192+0.003;
+            waypoints.push_back(target_pose);
+            target_pose.position.y = first_node[1]-0.002;
+            waypoints.push_back(target_pose);
+            moveCartesian(waypoints,0.005);
+            waypoints.clear();
             }break;
         case 1:
-            {target_pose.position.x = first_node[0];
+            {
+            rpy(-1.570796327,2);
+            ros::Duration(1).sleep();
+            rpy(1.570796327,0);
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            target_pose.position.x = tool_in_base_link[0];
+            target_pose.position.y = tool_in_base_link[1];
+            target_pose.position.z = tool_in_base_link[2];
+            target_pose.orientation.x = tool_to_base_qua.getX();
+            target_pose.orientation.y = tool_to_base_qua.getY();
+            target_pose.orientation.z = tool_to_base_qua.getZ();
+            target_pose.orientation.w = tool_to_base_qua.getW();   
+            target_pose.position.x = first_node[0]+0.006;
             waypoints.push_back(target_pose);
-            target_pose.position.y =first_node[1]-0.192;
+            target_pose.position.y = first_node[1]-0.004;
             waypoints.push_back(target_pose);
-            moveCartesian(waypoints);
+            moveCartesian(waypoints,0.005);
             waypoints.clear();
             }break;
         case 2:
-            {target_pose.position.x = first_node[0]+0.192;
+            {rpy(1.570796327,0);
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            target_pose.position.x = tool_in_base_link[0];
+            target_pose.position.y = tool_in_base_link[1];
+            target_pose.position.z = tool_in_base_link[2];
+            target_pose.orientation.x = tool_to_base_qua.getX();
+            target_pose.orientation.y = tool_to_base_qua.getY();
+            target_pose.orientation.z = tool_to_base_qua.getZ();
+            target_pose.orientation.w = tool_to_base_qua.getW();
+            target_pose.position.x = first_node[0];
             waypoints.push_back(target_pose);
-            target_pose.position.y =first_node[1];
+            target_pose.position.y = first_node[1]-0.192+0.004;
             waypoints.push_back(target_pose);
-            moveCartesian(waypoints);
+            moveCartesian(waypoints,0.005);
             waypoints.clear();
+            
             }break;
         case 3:
-            {target_pose.position.x = first_node[0]+0.192;
+            {rpy(1.570796327,0);
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            target_pose.position.x = tool_in_base_link[0];
+            target_pose.position.y = tool_in_base_link[1];
+            target_pose.position.z = tool_in_base_link[2];
+            target_pose.orientation.x = tool_to_base_qua.getX();
+            target_pose.orientation.y = tool_to_base_qua.getY();
+            target_pose.orientation.z = tool_to_base_qua.getZ();
+            target_pose.orientation.w = tool_to_base_qua.getW();
+            target_pose.position.x = first_node[0]+0.192;
             waypoints.push_back(target_pose);
-            target_pose.position.y =first_node[1]-0.192;
+            target_pose.position.y = first_node[1]-0.192+0.002;
             waypoints.push_back(target_pose);
-            moveCartesian(waypoints);
+            moveCartesian(waypoints,0.005);
             waypoints.clear();
             }break;
         default:
             break;
         }
-        // get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
-        // target_pose.orientation.x = tool_to_base_qua.getX();
-        // target_pose.orientation.y = tool_to_base_qua.getY();
-        // target_pose.orientation.z = tool_to_base_qua.getZ();
-        // target_pose.orientation.w = tool_to_base_qua.getW();
-        // target_pose.position.z -= 0.08;
-        // waypoints.push_back(target_pose);
-        // moveCartesian(waypoints);
-        // waypoints.clear();
-
+        arm.setMaxAccelerationScalingFactor(0.1);
+        arm.setMaxVelocityScalingFactor(0.1);
         // 接近孔件
-        touch_hole();
+        get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+        delta_xyz.setZero();
+        delta_xyz[2] = first_node[2]+0.001- tool_in_base_link[2]+0.1;
+        double max_z =  touch_hole(delta_xyz,0.02);
+        if (max_z>15.0)
+        {
+            flag = 1;
+        }
         std::cout<<"是否需要寻找孔的标志："<<flag<<std::endl;
-        now = std::time(nullptr); // 获取当前时间（秒）
-        std::cout << "寻孔开始时间: " << std::put_time(std::localtime(&now), "%Y-%m-%d %H:%M:%S") << std::endl;
-        // 寻找孔
         get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
         target_pose.position.x = tool_in_base_link[0];
         target_pose.position.y = tool_in_base_link[1];
@@ -740,7 +788,7 @@ void reinforcement::first_layer_ver()
         // now = std::time(nullptr); // 获取当前时间（秒）
         // std::cout << "寻孔结束时间: " << std::put_time(std::localtime(&now), "%Y-%m-%d %H:%M:%S") << std::endl;
         // 自适应导纳插孔
-        vector3d ft_dir(0.0,0.0,10.0);   
+        vector3d ft_dir(0.0,0.0,15.0);   
         changeController("joint_group_vel_controller","scaled_pos_joint_traj_controller");
         ft_bias_client.call(setBias_client);
         sleep.sleep();
@@ -752,21 +800,13 @@ void reinforcement::first_layer_ver()
         // 回home
         gripper_open();
         sleep.sleep();
-        target_pose.position.z += 0.45;
-        waypoints.push_back(target_pose);
-        target_pose.position.x += 0.55;
-        waypoints.push_back(target_pose);
-        moveCartesian(waypoints);
-        waypoints.clear();
-
-        std::cout<<"输入4回home,其他退出"<<std::endl;
-        std::cin>>j;
-        if (j != 2)
-        {   
-            return;
-        }
-
-
+        delta_xyz.setZero();
+        delta_xyz[2] = 0.3;
+        CartesianVelCtrl(delta_xyz,0.3);
+        // sleep.sleep();
+        delta_xyz.setZero();
+        delta_xyz[0] = 0.55;
+        CartesianVelCtrl(delta_xyz,0.3);
         arm.setNamedTarget("home_ver");
         arm.move();
     }
@@ -1253,9 +1293,8 @@ void reinforcement::admittance(vector3d &ft_dir,const double &threshold_z)
         // TwistStamped.twist.linear.x = arm_desired_twist_adm_[0];
         // TwistStamped.twist.linear.y = arm_desired_twist_adm_[1];
         TwistStamped.twist.linear.z = arm_desired_twist_adm_[2]*0.5;
-        TwistStamped.twist.angular.x = 0.0;
-        TwistStamped.twist.angular.y = 0.0;
-        TwistStamped.twist.angular.z = 0.0;
+        TwistStamped.twist.angular = geometry_msgs::Vector3();
+
         // ser_vel_msg.point.z = arm_desired_twist_adm_[2];
         // std::cout<<"ft_dir[2]:"<<ft_dir[2]<<std::endl;
         // ser_vel.publish(ser_vel_msg);
@@ -1266,31 +1305,15 @@ void reinforcement::admittance(vector3d &ft_dir,const double &threshold_z)
         // if (abs(wrench_ft_frame[2] - ft_dir[2])<threshold_z)
         {   
             TwistStamped.header.stamp = ros::Time::now();
-            TwistStamped.twist.linear.x = 0.0;
-            TwistStamped.twist.linear.y = 0.0;
-            TwistStamped.twist.linear.z = 0.0;
-            TwistStamped.twist.angular.x = 0.0;
-            TwistStamped.twist.angular.y = 0.0;
-            TwistStamped.twist.angular.z = 0.0;
+            TwistStamped.twist.linear = geometry_msgs::Vector3();
+            TwistStamped.twist.angular= geometry_msgs::Vector3();
             admit_vel_pub.publish(TwistStamped);
             break;
         }
         // ft_dir[2] += 0.004; // 每秒增加0.5N
         ros::spinOnce();
         loop_rate.sleep();
-           
     }
-    // 跳出循环后 初始化该话题信息
-    TwistStamped.header.stamp = ros::Time::now();
-    TwistStamped.twist.linear.x = 0.0;
-    TwistStamped.twist.linear.y = 0.0;
-    TwistStamped.twist.linear.z = 0.0;
-    TwistStamped.twist.angular.x = 0.0;
-    TwistStamped.twist.angular.y = 0.0;
-    TwistStamped.twist.angular.z = 0.0;
-    admit_vel_pub.publish(TwistStamped);
-
-
 }
 void reinforcement::rpy(double r,int i)
 {   
@@ -1332,51 +1355,100 @@ void reinforcement::rpy(double r,int i)
     arm.move();
     
 }
-void reinforcement::touch_hole()
+double reinforcement::touch_hole(Eigen::Vector3d &delta_xyz,double velocity)
 {   
-    flag = 0;
     ft_bias_client.call(setBias_client);
-    geometry_msgs::TwistStamped TwistStamped;
-    geometry_msgs::PointStamped ser_vel_msg;
-    changeController("joint_group_vel_controller","scaled_pos_joint_traj_controller"); // 启动-停止
-    ros::Duration sleep(1);
-    ros::Duration elapsed_time;
-    double wrench_ft_frame_flag = 0.0;
-    ros::Time start_time = ros::Time::now();
-    while (ros::ok())
-    {   
-        // std::cout<<wrench_ft_frame[2]<<std::endl;
-        elapsed_time = ros::Time::now() - start_time;
-
-        if (elapsed_time.toSec() >= 3.6)
-        {
-            break; // 跳出循环
-        }
-        TwistStamped.header.stamp = ros::Time::now();
-        TwistStamped.twist.linear.x = 0.0;
-        TwistStamped.twist.linear.y = 0.0;
-        TwistStamped.twist.linear.z = -0.04;
-        TwistStamped.twist.angular.x = 0.0;
-        TwistStamped.twist.angular.y = 0.0;
-        TwistStamped.twist.angular.z = 0.0;
-        admit_vel_pub.publish(TwistStamped);
-        ros::spinOnce();
-        loop_rate.sleep(); 
-    }
-    std::cout<<wrench_ft_frame[2]<<std::endl;
-    if ((wrench_ft_frame[2])>10)
+    geometry_msgs::TwistStamped ibvs_ctrl_msg;
+    ibvs_ctrl_msg.twist.angular = geometry_msgs::Vector3();
+    ros::Duration(1).sleep();
+    if (velocity == 0.0)
     {
-        // 需要搜孔
-        flag = 1;
+        std::cout<<"速度设置不能为0.0"<<std::endl;
+        return -1.0;
     }
-
-    TwistStamped.header.stamp = ros::Time::now();
-    TwistStamped.twist.linear.z = 0.0;
-    admit_vel_pub.publish(TwistStamped);
-    sleep.sleep();
+    double distance = delta_xyz.norm();
+    double time = 1.5 * distance / velocity ; // 计算L2范数 即欧式距离,计算出走完该距离需要多少时间，距离单位m，速度单位m/s
+    double t1 = time/3.0;
+    double t2 = 2.0*time/3.0;
+    double acc = velocity /(time/3.0); // 使用梯形速度规划 加速度周期为 T/3；
+    Eigen::Vector3d unit_direction =  delta_xyz / distance; // 计算出单位方向向量
+    changeController("joint_group_vel_controller","scaled_pos_joint_traj_controller"); // 启动-停止
+    ros::Time start_time = ros::Time::now();
+    ros::Duration elapsed_time;
+    double max_z = 0.0;
+    while (ros::ok() && elapsed_time.toSec() <time)
+    {
+        elapsed_time = ros::Time::now() - start_time;
+        if ( elapsed_time.toSec() >= 0.0 && elapsed_time.toSec() <= t1)
+        {   ibvs_ctrl_msg.header.stamp = ros::Time::now();
+            ibvs_ctrl_msg.twist.linear.x = elapsed_time.toSec() * acc*unit_direction[0];
+            ibvs_ctrl_msg.twist.linear.y = elapsed_time.toSec() * acc*unit_direction[1];
+            ibvs_ctrl_msg.twist.linear.z = elapsed_time.toSec() * acc*unit_direction[2];
+        }else if (t1 < elapsed_time.toSec() && elapsed_time.toSec() <= t2)
+        {
+            ibvs_ctrl_msg.header.stamp = ros::Time::now();
+            ibvs_ctrl_msg.twist.linear.x = velocity * unit_direction[0];
+            ibvs_ctrl_msg.twist.linear.y = velocity * unit_direction[1];
+            ibvs_ctrl_msg.twist.linear.z = velocity * unit_direction[2];
+        }else
+        {   
+            double scale = velocity-acc*(elapsed_time.toSec()-t2);
+            ibvs_ctrl_msg.header.stamp = ros::Time::now();
+            ibvs_ctrl_msg.twist.linear.x = scale * unit_direction[0];// 赋值速度分量  
+            ibvs_ctrl_msg.twist.linear.y = scale * unit_direction[1];
+            ibvs_ctrl_msg.twist.linear.z = scale * unit_direction[2];
+        }
+        admit_vel_pub.publish(ibvs_ctrl_msg);
+        if (wrench_ft_frame[2]>max_z)
+        {
+            max_z = wrench_ft_frame[2];
+        }
+        loop_rate.sleep();
+    }
+    ibvs_ctrl_msg.twist.linear = geometry_msgs::Vector3();
+    admit_vel_pub.publish(ibvs_ctrl_msg);
 
     changeController("scaled_pos_joint_traj_controller","joint_group_vel_controller"); // 启动-停止
-    ROS_INFO("touch over");
+    // geometry_msgs::TwistStamped TwistStamped;
+    // geometry_msgs::PointStamped ser_vel_msg;
+    // changeController("joint_group_vel_controller","scaled_pos_joint_traj_controller"); // 启动-停止
+    // ros::Duration sleep(1);
+    // ros::Duration elapsed_time;
+    // double wrench_ft_frame_flag = 0.0;
+    // ros::Time start_time = ros::Time::now();
+    // while (ros::ok())
+    // {   
+    //     // std::cout<<wrench_ft_frame[2]<<std::endl;
+    //     elapsed_time = ros::Time::now() - start_time;
+    //     if (elapsed_time.toSec() >= 3.56)
+    //     {
+    //         break; // 跳出循环
+    //     }
+    //     TwistStamped.header.stamp = ros::Time::now();
+    //     TwistStamped.twist.linear.x = 0.0;
+    //     TwistStamped.twist.linear.y = 0.0;
+    //     TwistStamped.twist.linear.z = -0.04;
+    //     TwistStamped.twist.angular.x = 0.0;
+    //     TwistStamped.twist.angular.y = 0.0;
+    //     TwistStamped.twist.angular.z = 0.0;
+    //     admit_vel_pub.publish(TwistStamped);
+    //     ros::spinOnce();
+    //     loop_rate.sleep(); 
+    // }
+    // ros::Duration(1).sleep();
+    // std::cout<<wrench_ft_frame[2]<<std::endl;
+    // if ((wrench_ft_frame[2])>5)
+    // {
+    //     // 需要搜孔
+    //     flag = 1;
+    // }
+    // TwistStamped.header.stamp = ros::Time::now();
+    // TwistStamped.twist.linear.z = 0.0;
+    // admit_vel_pub.publish(TwistStamped);
+    // sleep.sleep();
+    // changeController("scaled_pos_joint_traj_controller","joint_group_vel_controller"); // 启动-停止
+    // ROS_INFO("touch over");
+    return max_z;
 }
 void reinforcement::fixtrajectorytime(moveit_msgs::RobotTrajectory &trajectory){
   moveit_msgs::RobotTrajectory trajectory2;
@@ -1489,7 +1561,9 @@ bool reinforcement::space_arc_ver(geometry_msgs::Pose &target_pose)
     target_pose_arc.orientation = target_pose.orientation;
     Vector4d fz;
     geometry_msgs::TwistStamped TwistStamped;
-    while (ros::ok() && (wrench_ft_frame[2])>5.0)
+    std::cout<<"wrench_ft_frame[2]:"<<wrench_ft_frame[2]<<std::endl;
+    double max_z = 100.0;
+    while (ros::ok() && max_z>30.0)
     {   
         get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
         target_pose.position.x = tool_in_base_link[0];
@@ -1603,7 +1677,14 @@ bool reinforcement::space_arc_ver(geometry_msgs::Pose &target_pose)
             my_plan.trajectory_ = trajectory;
             arm.asyncExecute(my_plan);
             while(mvgr_status.status.status == 3 && ros::ok()){}  // since the topic is to slow, we need to wait till it switches from 3(executed) to 1(in motion)
-            while(mvgr_status.status.status != 3 && ros::ok()){fz[j] = wrench_ft_frame[2];} 
+            double max = -100.0;
+            while(mvgr_status.status.status != 3 && ros::ok()){
+                if (wrench_ft_frame[2]>max)
+                {
+                    max = wrench_ft_frame[2];
+                }
+            }
+            fz[j] =  max;
             waypoints.clear();
             sleep.sleep();
             waypoints.push_back(target_pose);
@@ -1613,10 +1694,10 @@ bool reinforcement::space_arc_ver(geometry_msgs::Pose &target_pose)
             sleep.sleep();
         }
         std::cout<<fz<<std::endl;
-        int minIndex = 4;
-        fz.minCoeff(&minIndex);
-        std::cout<<minIndex<<std::endl;
-        switch (minIndex)
+        int Index = 4;
+        fz.maxCoeff(&Index);
+        std::cout<<Index<<std::endl;
+        switch (Index)
         {
             case 0:
                 {   
@@ -1660,38 +1741,15 @@ bool reinforcement::space_arc_ver(geometry_msgs::Pose &target_pose)
                 break;
         }
         sleep.sleep();
-        changeController("joint_group_vel_controller","scaled_pos_joint_traj_controller"); // 启动-停止
-        ros::Duration elapsed_time;
-        double wrench_ft_frame_flag = 0.0;
-        ros::Time start_time = ros::Time::now();
-        while (ros::ok())
-        {   
-            // std::cout<<wrench_ft_frame[2]<<std::endl;
-            elapsed_time = ros::Time::now() - start_time;
-
-            if (elapsed_time.toSec() >= 2)
-            {
-                break; // 跳出循环
-            }
-            TwistStamped.header.stamp = ros::Time::now();
-            TwistStamped.twist.linear.x = 0.0;
-            TwistStamped.twist.linear.y = 0.0;
-            TwistStamped.twist.linear.z = -0.02;
-            TwistStamped.twist.angular = geometry_msgs::Vector3();
-            admit_vel_pub.publish(TwistStamped);
-            ros::spinOnce();
-            loop_rate.sleep(); 
-        }
-        TwistStamped.header.stamp = ros::Time::now();
-        TwistStamped.twist.linear.z = 0.0;
-        admit_vel_pub.publish(TwistStamped);
-        sleep.sleep();
-        changeController("scaled_pos_joint_traj_controller","joint_group_vel_controller"); // 启动-停止
-        std::cout<<"Z轴受力:"<<wrench_ft_frame[2]<<std::endl;
+        get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+        Eigen::Vector3d delta_xyz(0.0,0.0,0.0);
+        delta_xyz[2] = -0.018; 
+        max_z = touch_hole(delta_xyz,0.01);
+        std::cout<<"max_z:"<<max_z<<std::endl;
     }
     
     // 判断是否到孔中心
-    if ((wrench_ft_frame[2])<5.0)
+    if (max_z<30.0)
     {   
         std::cout<<"已在孔中心"<<std::endl;
         return true;
@@ -1760,7 +1818,7 @@ bool reinforcement::space_arc_node(geometry_msgs::Pose &target_pose)
     Vector4d fz;
     geometry_msgs::TwistStamped TwistStamped;
     ros::Duration sleep(1);
-    while (ros::ok() && fabs(wrench_ft_frame[2])>3)
+    while (ros::ok() && fabs(wrench_ft_frame[2])>2)
     {   
         get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
         target_pose.position.x = tool_in_base_link[0];
@@ -1963,7 +2021,7 @@ bool reinforcement::space_arc_node(geometry_msgs::Pose &target_pose)
         std::cout<<"Z轴受力:"<<wrench_ft_frame[2]<<std::endl;
     }
     // 判断是否到孔中心
-    if (fabs(wrench_ft_frame[2])<3)
+    if (fabs(wrench_ft_frame[2])<2)
     {   
         std::cout<<"已在孔中心"<<std::endl;
         return true;
@@ -2031,26 +2089,49 @@ void reinforcement::palce_hori(int index){
             ibvs.request.ibvs_request = false;
             ibvs_srv.call(ibvs);
             ibvs_start = ibvs.response.ibvs_response;
-            ros::Duration(1).sleep();
-            // 执行放置循环
-            ros::Time start_time = ros::Time::now();
-            ros::Duration elapsed_time;
-            while (ros::ok())
-            {   
-                ibvs_ctrl_msg.twist.linear.x = 0.0;
-                ibvs_ctrl_msg.twist.linear.y = 0.0;
-                elapsed_time = ros::Time::now() - start_time;
-                if (elapsed_time.toSec() >= 6.5)
-                {   
-                    ibvs_ctrl_msg.header.stamp = ros::Time::now();
-                    ibvs_ctrl_msg.twist.linear.z = 0.0;
-                    admit_vel_pub.publish(ibvs_ctrl_msg);
-                    break; // 跳出循环
-                }
-                ibvs_ctrl_msg.header.stamp = ros::Time::now();
-                ibvs_ctrl_msg.twist.linear.z = -0.01;
-                admit_vel_pub.publish(ibvs_ctrl_msg);
-            }
+            // ros::Duration(1).sleep();
+            // // 执行放置循环
+            // geometry_msgs::Pose target_pose;
+            // std::vector<geometry_msgs::Pose> waypoints;
+            // get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            // target_pose.position.x = tool_in_base_link[0];
+            // target_pose.position.y = tool_in_base_link[1];
+            // target_pose.position.z = tool_in_base_link[2];
+            // target_pose.orientation.x = tool_to_base_qua.getX();
+            // target_pose.orientation.y = tool_to_base_qua.getY();
+            // target_pose.orientation.z = tool_to_base_qua.getZ();
+            // target_pose.orientation.w = tool_to_base_qua.getW();
+            // if (index == 0 || index == 1 )
+            // {
+            //     target_pose.position.y += 0.002;
+            //     waypoints.push_back(target_pose);
+            //     moveCartesian(waypoints);
+            //     waypoints.clear();
+            // }else
+            // {
+            //     target_pose.position.x -= 0.002;
+            //     waypoints.push_back(target_pose);
+            //     moveCartesian(waypoints);
+            //     waypoints.clear();
+            // }
+            // ros::Time start_time = ros::Time::now();
+            // ros::Duration elapsed_time;
+            // while (ros::ok())
+            // {   
+            //     ibvs_ctrl_msg.twist.linear.x = 0.0;
+            //     ibvs_ctrl_msg.twist.linear.y = 0.0;
+            //     elapsed_time = ros::Time::now() - start_time;
+            //     if (elapsed_time.toSec() >= 5.0)
+            //     {   
+            //         ibvs_ctrl_msg.header.stamp = ros::Time::now();
+            //         ibvs_ctrl_msg.twist.linear.z = 0.0;
+            //         admit_vel_pub.publish(ibvs_ctrl_msg);
+            //         break; // 跳出循环
+            //     }
+            //     ibvs_ctrl_msg.header.stamp = ros::Time::now();
+            //     ibvs_ctrl_msg.twist.linear.z = -0.01;
+            //     admit_vel_pub.publish(ibvs_ctrl_msg);
+            // }
             break;                    
         }
     }
@@ -2058,8 +2139,9 @@ void reinforcement::palce_hori(int index){
 }
 
 void reinforcement::CartesianVelCtrl(const Eigen::Vector3d& delta_xyz,const double & velocity){
+    std::cout <<"<<梯形速度规划开始----------------------------------"<< std::endl;
     get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
-    std::cout <<tool_in_base_link.transpose()<< std::endl;
+    std::cout <<"开始位置："<<tool_in_base_link.transpose()<< std::endl;
     geometry_msgs::TwistStamped ibvs_ctrl_msg;
     ibvs_ctrl_msg.twist.angular.x = 0.0;
     ibvs_ctrl_msg.twist.angular.y = 0.0;
@@ -2108,10 +2190,11 @@ void reinforcement::CartesianVelCtrl(const Eigen::Vector3d& delta_xyz,const doub
     ibvs_ctrl_msg.twist.linear = geometry_msgs::Vector3();
     admit_vel_pub.publish(ibvs_ctrl_msg);
     changeController("scaled_pos_joint_traj_controller","joint_group_vel_controller"); // 启动-停止
-    std::cout<<"需要时间："<<time<<std::endl;
-    std::cout<<"持续时间："<<elapsed_time<<std::endl;
+    std::cout<<"delta_xyz:"<<delta_xyz.transpose()<<std::endl;
     get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
-    std::cout <<tool_in_base_link.transpose()<< std::endl;
+    std::cout <<"结束位置："<<tool_in_base_link.transpose()<< std::endl;
+    std::cout <<"<<梯形速度规划结束----------------------------------"<< std::endl;
+
 
 }
 
