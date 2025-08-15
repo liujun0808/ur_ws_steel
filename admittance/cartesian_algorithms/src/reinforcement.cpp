@@ -51,8 +51,9 @@ reinforcement::reinforcement(ros::NodeHandle &n):nh_(n),arm("manipulator"),loop_
     tool_to_base_link.setZero();
     tool_in_base_link.setZero();
     first_node.setZero();
-    first_node<<-0.329214 , 0.707703  , 0.18007;
+    first_node<<-0.327, 0.708, 0.180;
     seconde_node.setZero();
+    // seconde_node<<-0.328487,  0.703208,  0.375466;
     // seconde_node<<0.12347,0.8365,0.270;
     // first_node<<-0.3469,0.7475,0.183054;
     grasp_flag_msg.flag = false;
@@ -178,54 +179,85 @@ void reinforcement::run()
     int i = 0;
 
     // 第一层node
-    while (ros::ok() && (node.objects.size()!=8)) { std::cout<<"node size:"<< node.objects.size()<<std::endl;ros::Duration(1).sleep();}
-    std::cout<<"输入1开始,其他退出"<<std::endl;
+    // while (ros::ok() && (node.objects.size()!=8)) { std::cout<<"node size:"<< node.objects.size()<<std::endl;ros::Duration(1).sleep();}
+    // std::cout<<"输入1开始,其他退出"<<std::endl;
+    // std::cin>>i;
+    // if (i != 1)return;
+    // first_layer_node();
+    // std::cout<<"首个node的坐标"<<first_node.transpose()<<std::endl;
+
+
+
+    // // 第一层horizontal
+    // arm.setNamedTarget("home_hori");arm.move();
+    // grasp_flag_msg.flag = true;
+    // grasp_flag_msg.cls = 2;
+    // grasp_flag_msg.conf = 0.1;
+    // grasp_flag_pub.publish(grasp_flag_msg);
+    // while (ros::ok() && (hor.objects.size()!=8 )){
+    //     std::cout<<"hor size:"<< hor.objects.size()<<std::endl;
+    //     hor.objects.clear();
+    //     grasp_flag_pub.publish(grasp_flag_msg);
+    //     ros::Duration(1).sleep();
+    //     }
+    // std::cout<<"输入2开始,其他退出"<<std::endl;
+    // std::cin>>i;
+    // if (i != 2)return;
+    // first_layer_hori();
+
+    // 第一层vertical
+    // arm.setNamedTarget("home_ver");arm.move();
+    // grasp_flag_msg.flag = true;
+    // grasp_flag_msg.cls = 1;
+    // grasp_flag_msg.conf = 0.8;
+    // grasp_flag_pub.publish(grasp_flag_msg);
+    // while (ros::ok() && (ver.objects.size()!=4 )){
+    //     std::cout<<"ver size:"<< ver.objects.size()<<std::endl;
+    //     ver.objects.clear();
+    //     grasp_flag_pub.publish(grasp_flag_msg);
+    //     ros::Duration(1).sleep();
+    //     }
+    // std::cout<<"输入3开始,其他退出"<<std::endl;
+    // std::cin>>i;
+    // if (i != 3)return;
+    // first_layer_ver();
+
+    // 第二层node
+    node.objects.clear();
+    arm.setNamedTarget("home_node");arm.move();
+    grasp_flag_msg.flag = true;
+    grasp_flag_msg.cls = 0;
+    grasp_flag_msg.conf = 0.5;
+    grasp_flag_pub.publish(grasp_flag_msg);
+    while (ros::ok() && (node.objects.size()!=4 )){
+        std::cout<<"node size:"<< node.objects.size()<<std::endl;
+        node.objects.clear();
+        grasp_flag_pub.publish(grasp_flag_msg);
+        ros::Duration(1).sleep();
+        }
+    std::cout<<"输入4开始,其他退出"<<std::endl;
     std::cin>>i;
-    if (i != 1)return;
-    first_layer_node();
-    std::cout<<"首个node的坐标"<<first_node.transpose()<<std::endl;
+    if (i != 4)return;
+    seconde_layer_node();
+    std::cout<<"第二层首个node的坐标"<<seconde_node.transpose()<<std::endl;
 
-
-
-    // 第一层horizontal
+    // 第二层horizontal
+    hor.objects.clear();
     arm.setNamedTarget("home_hori");arm.move();
     grasp_flag_msg.flag = true;
     grasp_flag_msg.cls = 2;
     grasp_flag_msg.conf = 0.1;
     grasp_flag_pub.publish(grasp_flag_msg);
-    while (ros::ok() && (hor.objects.size()!=8 )){
+    while (ros::ok() && (hor.objects.size()!=4 )){
         std::cout<<"hor size:"<< hor.objects.size()<<std::endl;
         hor.objects.clear();
         grasp_flag_pub.publish(grasp_flag_msg);
         ros::Duration(1).sleep();
         }
-    std::cout<<"输入2开始,其他退出"<<std::endl;
+    std::cout<<"输入5开始,其他退出"<<std::endl;
     std::cin>>i;
-    if (i != 2)return;
-    first_layer_hori();
-
-    // 第一层vertical
-    arm.setNamedTarget("home_ver");arm.move();
-    grasp_flag_msg.flag = true;
-    grasp_flag_msg.cls = 1;
-    grasp_flag_msg.conf = 0.8;
-    grasp_flag_pub.publish(grasp_flag_msg);
-    while (ros::ok() && (ver.objects.size()!=4 )){
-        std::cout<<"ver size:"<< ver.objects.size()<<std::endl;
-        ver.objects.clear();
-        grasp_flag_pub.publish(grasp_flag_msg);
-        ros::Duration(1).sleep();
-        }
-    std::cout<<"输入3开始,其他退出"<<std::endl;
-    std::cin>>i;
-    if (i != 3)return;
-    first_layer_ver();
-
-    // 第二层node
-    // seconde_layer_node();
-
-    // 第二层horizontal
-    // seconde_layer_hori();
+    if (i != 5)return;
+    seconde_layer_hori();
 
     // arm.setNamedTarget("home_node");arm.move();
 
@@ -446,7 +478,6 @@ void reinforcement::first_layer_hori()
 {   
     // 测试
     gripper_open();
-    std::size_t hor_num = hor.objects.size();
     vector3d hori_in_pixel;
     std::vector<geometry_msgs::Pose> waypoints;
     geometry_msgs::Pose target_pose;
@@ -618,7 +649,7 @@ void reinforcement::first_layer_ver()
     int j=0;
     // 初始位置 姿态获取
     for (size_t i = 0; i < 4; i++)
-    {   
+    {   flag = 0;
         get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
         target_pose.position.x = tool_in_base_link[0];
         target_pose.position.y = tool_in_base_link[1];
@@ -737,7 +768,7 @@ void reinforcement::first_layer_ver()
             target_pose.orientation.w = tool_to_base_qua.getW();
             target_pose.position.x = first_node[0];
             waypoints.push_back(target_pose);
-            target_pose.position.y = first_node[1]-0.192+0.004;
+            target_pose.position.y = first_node[1]-0.192+0.006;
             waypoints.push_back(target_pose);
             moveCartesian(waypoints,0.005);
             waypoints.clear();
@@ -755,7 +786,7 @@ void reinforcement::first_layer_ver()
             target_pose.orientation.w = tool_to_base_qua.getW();
             target_pose.position.x = first_node[0]+0.192;
             waypoints.push_back(target_pose);
-            target_pose.position.y = first_node[1]-0.192+0.002;
+            target_pose.position.y = first_node[1]-0.192+0.004;
             waypoints.push_back(target_pose);
             moveCartesian(waypoints,0.005);
             waypoints.clear();
@@ -783,7 +814,8 @@ void reinforcement::first_layer_ver()
         target_pose.orientation.y = tool_to_base_qua.getY();
         target_pose.orientation.z = tool_to_base_qua.getZ();
         target_pose.orientation.w = tool_to_base_qua.getW();
-        if (flag == 1)space_arc_ver(target_pose);
+        double r = target_pose.position.z - first_node[2];
+        if (flag == 1)space_arc_ver(target_pose,r);
 
         // now = std::time(nullptr); // 获取当前时间（秒）
         // std::cout << "寻孔结束时间: " << std::put_time(std::localtime(&now), "%Y-%m-%d %H:%M:%S") << std::endl;
@@ -796,17 +828,19 @@ void reinforcement::first_layer_ver()
         // now = std::time(nullptr); // 获取当前时间（秒）
         // std::cout << "插孔结束时间: " << std::put_time(std::localtime(&now), "%Y-%m-%d %H:%M:%S") << std::endl;
         changeController("scaled_pos_joint_traj_controller","joint_group_vel_controller"); // 启动-停止
-
+        get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+        vertical[i] = tool_in_base_link;
+        std::cout<<"第"<<i<<"个竖杆: "<<vertical[i].transpose()<<"\n";
         // 回home
         gripper_open();
         sleep.sleep();
         delta_xyz.setZero();
         delta_xyz[2] = 0.3;
-        CartesianVelCtrl(delta_xyz,0.3);
+        CartesianVelCtrl(delta_xyz,0.2);
         // sleep.sleep();
         delta_xyz.setZero();
         delta_xyz[0] = 0.55;
-        CartesianVelCtrl(delta_xyz,0.3);
+        CartesianVelCtrl(delta_xyz,0.2);
         arm.setNamedTarget("home_ver");
         arm.move();
     }
@@ -823,10 +857,12 @@ void reinforcement::seconde_layer_node()
     center.request.x = 320;
     center.request.y = 240;
     center.request.cls = 0;
-    // std::size_t y=0;
-    for (size_t i = 4; i < 8; i++)
+    std::size_t y=0;
+    double delta_x,delta_y;
+    for (size_t i = 0; i < 4; i++)
     {   
         // 初始位置 姿态获取
+        flag = 0;
         get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
         target_pose.position.x = tool_in_base_link[0];
         target_pose.position.y = tool_in_base_link[1];
@@ -850,9 +886,15 @@ void reinforcement::seconde_layer_node()
         waypoints.clear();
         client_sec_img.call(center);
         ros::Duration sleep(1);
+        while (ros::ok()  && ( !center.response.flag || (15>abs(center.response.angle)) || (abs(center.response.angle)>85)))
+        {   
+            printf("角度计算错误：%2f\n",center.response.angle);
+            client_sec_img.call(center);
+        }
+
         // 判断二次拍照是否计算成功
         if (!center.response.flag){std::cout<<"二次拍照计算失败"<<std::endl;return;}
-        if (center.response.depth < 100){center.response.depth = camere2flat[0];std::cout<<"深度已经补偿"<<std::endl;} // 593 home下相机距离node的高度
+        // if (center.response.depth < 100){center.response.depth = camere2flat[0];std::cout<<"深度已经补偿"<<std::endl;} // 593 home下相机距离node的高度
         std::cout<<"response结果:"<<center.response<<std::endl;
         // 将像素坐标进行更新
         node2_in_pixel<<center.response.x_r,center.response.y_r,camere2flat[0];
@@ -862,12 +904,25 @@ void reinforcement::seconde_layer_node()
         // 旋转抓取姿态
         geometry_msgs::Quaternion orientation_temp = target_pose.orientation;
         target_pose.orientation = rotation_grasp(center.response.angle,1);
+        switch (i)
+        {
+        case 0:
+            {delta_x = -0.004; delta_y = -0.011;}break;
+        case 1:
+            {delta_x = -0.003; delta_y = -0.008;}break;
+        case 2:
+            {delta_x = -0.003; delta_y = -0.013;}break;
+        case 3:
+            {delta_x = -0.003; delta_y = -0.005;}break;
+        default:
+            break;
+        }
         // 节点抓放
-        target_pose.position.x = workp_in_base_link[0]-0.0152;
+        target_pose.position.x = workp_in_base_link[0] + delta_x;
         waypoints.push_back(target_pose);
-        target_pose.position.y = workp_in_base_link[1]-0.0232;
+        target_pose.position.y = workp_in_base_link[1] + delta_y;
         waypoints.push_back(target_pose);
-        target_pose.position.z = 0.06;
+        target_pose.position.z = 0.053;
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
@@ -875,87 +930,104 @@ void reinforcement::seconde_layer_node()
         // std::cout<<"输入1开始,其他退出"<<std::endl;
         // std::cin>>y;
         // if (y != 1)
-        // {
+        // {   
+        //     // arm.setNamedTarget("home_node");
+        //     // arm.move();
+        //     // continue;
         //     return;
         // }
 // 测试++++++++++++++++++++++++++++++
         gripper_close();
         sleep.sleep();
         target_pose.orientation = orientation_temp; // 变化为原来的姿态
-        target_pose.position.z = 0.292;
+        target_pose.position.z = 0.465;
         waypoints.push_back(target_pose);
-        // get_hole_pos(y);
-        switch (i)
+        moveCartesian(waypoints);
+        waypoints.clear();
+        Eigen::Vector3d delta_xyz;
+       switch (i)
         {
-        case 4:
-            {target_pose.position.x = first_node[0];
-            waypoints.push_back(target_pose);
-            target_pose.position.y = first_node[1];
-            waypoints.push_back(target_pose);
-            moveCartesian(waypoints);
-            waypoints.clear();
-            }
-            break;
-        case 5:
-            {target_pose.position.y = first_node[1]-0.192;
-            waypoints.push_back(target_pose);
-            target_pose.position.x = first_node[0];
-            waypoints.push_back(target_pose);
-            moveCartesian(waypoints);
-            waypoints.clear();
-            }
-            break;
-        case 6:
+        case 0:
             {
-            target_pose.position.y = first_node[1];
-            waypoints.push_back(target_pose);
-            target_pose.position.x = first_node[0]+0.192;
-            waypoints.push_back(target_pose);
-            moveCartesian(waypoints);
-            waypoints.clear();
+            delta_xyz.setZero();
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            delta_xyz[0] = first_node[0] - tool_in_base_link[0];
+            delta_xyz[1] = first_node[1] - tool_in_base_link[1];
+            CartesianVelCtrl(delta_xyz,0.15);
+
             }
             break;
-        case 7:
-            {target_pose.position.y = first_node[1]-0.192;
-            waypoints.push_back(target_pose);
-            target_pose.position.x = first_node[0]+0.192;
-            waypoints.push_back(target_pose);
-            moveCartesian(waypoints);
-            waypoints.clear();
+        case 1: {
+            delta_xyz.setZero();
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            delta_xyz[0] = first_node[0] - tool_in_base_link[0];       
+            delta_xyz[1] = first_node[1]- 0.192- tool_in_base_link[1];
+            CartesianVelCtrl(delta_xyz,0.15);
+            }
+            break;
+        case 2:{
+            delta_xyz.setZero();
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            delta_xyz[0] = first_node[0]+0.192 - tool_in_base_link[0];       
+            delta_xyz[1] = first_node[1] - tool_in_base_link[1];
+            CartesianVelCtrl(delta_xyz,0.15);
+            }
+            break;
+        case 3:{
+            delta_xyz.setZero();
+            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+            delta_xyz[0] = first_node[0]+0.192 - tool_in_base_link[0];       
+            delta_xyz[1] = first_node[1]-0.192- tool_in_base_link[1]+0.005;
+            delta_xyz[2] = -0.005;
+            CartesianVelCtrl(delta_xyz,0.15);
             }
             break;
         default:
             break;
         }
         // 接触杆件
-        touch_ver();
+        get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+        delta_xyz.setZero();
+        delta_xyz[2] = 0.385- tool_in_base_link[2]+0.01;
+        double max_z =  touch_hole(delta_xyz,0.015);
         // 搜点
-        if (flag == 1)
+        if (max_z>15.0)
         {
-            get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
-            target_pose.position.x = tool_in_base_link[0];
-            target_pose.position.y = tool_in_base_link[1];
-            target_pose.position.z = tool_in_base_link[2];
-            target_pose.orientation.x = tool_to_base_qua.getX();
-            target_pose.orientation.y = tool_to_base_qua.getY();
-            target_pose.orientation.z = tool_to_base_qua.getZ();
-            target_pose.orientation.w = tool_to_base_qua.getW();
-            space_arc_node(target_pose);
+            flag = 1;
         }
+        std::cout<<"是否需要寻找孔的标志："<<flag<<std::endl;
+        // 测试++++++++++++++++++++++++++
+        // std::cout<<"输入2开始,其他退出"<<std::endl;
+        // std::cin>>y;
+        // if (y != 2)
+        // {   
+
+        //     return;
+        // }
+// 测试++++++++++++++++++++++++++++++
+        get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
+        target_pose.position.x = tool_in_base_link[0];
+        target_pose.position.y = tool_in_base_link[1];
+        target_pose.position.z = tool_in_base_link[2];
+        target_pose.orientation.x = tool_to_base_qua.getX();
+        target_pose.orientation.y = tool_to_base_qua.getY();
+        target_pose.orientation.z = tool_to_base_qua.getZ();
+        target_pose.orientation.w = tool_to_base_qua.getW();
+        double r = tool_in_base_link[2] -0.365;
+        if (flag == 1)space_arc_ver(target_pose,r);
+
         // 自适应导纳插入
-        std::cout<<"开始插孔......"<<"时间"<<ros::Time::now()<<std::endl;
-        vector3d ft_dir(0.0,0.0,1.0);   
+        vector3d ft_dir(0.0,0.0,5.0);   
         changeController("joint_group_vel_controller","scaled_pos_joint_traj_controller");
         ft_bias_client.call(setBias_client);
         sleep.sleep();
         admittance(ft_dir,18);
         changeController("scaled_pos_joint_traj_controller","joint_group_vel_controller"); // 启动-停止
-        std::cout<<"结束插孔......"<<"时间"<<ros::Time::now()<<std::endl;
 
-        if (i==4)
+        if (i==0)
         {
             get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
-            seconde_node<<tool_in_base_link[0],tool_in_base_link[1],tool_in_base_link[2];
+            seconde_node = tool_in_base_link;
         }
         // 结束放置
         sleep.sleep();
@@ -965,7 +1037,7 @@ void reinforcement::seconde_layer_node()
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
-        arm.setNamedTarget("home");
+        arm.setNamedTarget("home_node");
         arm.move();
 // ************************
         // ros::Duration(10).sleep();
@@ -985,14 +1057,10 @@ void reinforcement::seconde_layer_hori()
     center.request.x = 320;
     center.request.y = 240;
     center.request.cls = 2;
-    // std::size_t y=0;
-    for (size_t i = 4; i < 8; i++)
+    double delta_x,delta_y;
+    for (size_t i = 0; i < 4; i++)
     {   
-        // if (i==0 || i ==3)
-        // {
-        //    continue;
-        // }
-        
+
         // 初始位置 姿态获取
         get_rotation_matrix(tool_to_base_link,tool_in_base_link,listener,"base","tool0");
         target_pose.position.x = tool_in_base_link[0];
@@ -1009,17 +1077,24 @@ void reinforcement::seconde_layer_hori()
         camera_to_base(hori_in_pixel);
 
         // 移动至节点上方进行二次拍照
-        target_pose.position.x = workp_in_base_link[0];
+        target_pose.position.x = workp_in_base_link[0]+0.01114759;
         waypoints.push_back(target_pose);
         target_pose.position.y = workp_in_base_link[1]-0.1069;
         waypoints.push_back(target_pose); 
         moveCartesian(waypoints);
         waypoints.clear();
+        center.request.x = hori_in_pixel[0];
+        center.request.y = hori_in_pixel[1];
+        center.request.cls = 2;
         client_sec_img.call(center);
         ros::Duration sleep(1);
         // 判断二次拍照是否计算成功
-        if (!center.response.flag){std::cout<<"二次拍照计算失败"<<std::endl;return;}
-        if (center.response.depth < 100){center.response.depth = camere2flat[1];std::cout<<"深度已经补偿"<<std::endl;} 
+        while (ros::ok() && !center.response.flag)
+        {
+            std::cout<<"二次拍照计算失败response.flag:"<<center.response.flag<<std::endl;
+            client_sec_img.call(center);
+            sleep.sleep();
+        } 
         std::cout<<"response结果:"<<center.response<<std::endl;
         // 将像素坐标进行更新
         hori_in_pixel<<center.response.x_r,center.response.y_r,camere2flat[1];
@@ -1028,38 +1103,56 @@ void reinforcement::seconde_layer_hori()
         
         // 旋转抓取姿态
         geometry_msgs::Quaternion orientation_temp = target_pose.orientation;
-        target_pose.orientation = rotation_grasp(center.response.angle,0);
+        target_pose.orientation = rotation_grasp(center.response.angle,2);
         // 横杆抓放
-        target_pose.position.x = workp_in_base_link[0]-0.0152;
+        switch (i)
+        {
+        case 0:
+            {delta_x = -0.002; delta_y = -0.01;}break;
+        case 1:
+            {delta_x = -0.002; delta_y = -0.008;}break;
+        case 2:
+            {delta_x = -0.002; delta_y = -0.01;}break;
+        case 3:
+            {delta_x = -0.002; delta_y = -0.01;}break;
+        default:
+            break;
+        }
+        target_pose.position.x = workp_in_base_link[0]+delta_x;
         waypoints.push_back(target_pose);
-        target_pose.position.y = workp_in_base_link[1]-0.0232;
+        target_pose.position.y = workp_in_base_link[1]+delta_y;
         waypoints.push_back(target_pose);
-        target_pose.position.z = 0.023;
+        target_pose.position.z = 0.001;
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
 
 // 测试++++++++++++++++++++++++++
-        // ros::Duration(3).sleep();
-        // arm.setNamedTarget("home");
-        // arm.move();
-        // continue;
+        // int m=0;
+        // std::cout<<"输入2开始,其他退出"<<std::endl;
+        // std::cin>>m;
+        // if (m != 2)
+        // {   
+        //     arm.setNamedTarget("home_hori");
+        //     arm.move(); 
+        //     return;
+        // }
 // 测试++++++++++++++++++++++++++++++
         gripper_close();
-        sleep.sleep();
-        target_pose.position.z = 0.362;
+        ros::Duration(2).sleep();
+        target_pose.position.z = 0.440;
+        target_pose.orientation = orientation_temp; // 变化为原来的姿态
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
-        target_pose.orientation = orientation_temp; // 变化为原来的姿态
         switch (i)
         {
-        case 4:
+        case 0:
             {target_pose.position.x = seconde_node[0];
             waypoints.push_back(target_pose);
             target_pose.position.y =seconde_node[1] - 0.098 +0.002;
             waypoints.push_back(target_pose);
-            target_pose.position.z = seconde_node[2] + 0.008;
+            target_pose.position.z = seconde_node[2] + 0.01;
             waypoints.push_back(target_pose);
             moveCartesian(waypoints);
             waypoints.clear();
@@ -1068,23 +1161,23 @@ void reinforcement::seconde_layer_hori()
             // first_node<<tool_in_base_link[0],tool_in_base_link[1],tool_in_base_link[2];
             }
             break;
-        case 5:
+        case 1:
             {target_pose.position.x = seconde_node[0]+0.192;
             waypoints.push_back(target_pose);
             target_pose.position.y = seconde_node[1]-0.098+0.005;
             waypoints.push_back(target_pose);
-            target_pose.position.z = seconde_node[2] + 0.008;
+            target_pose.position.z = seconde_node[2] + 0.01;
             waypoints.push_back(target_pose);
             moveCartesian(waypoints);
             waypoints.clear();
             }
             break;
-        case 6:
+        case 2:
             {target_pose.position.x = seconde_node[0]+0.098;
             waypoints.push_back(target_pose);
             target_pose.position.y = seconde_node[1]+0.002;
             waypoints.push_back(target_pose);
-            target_pose.position.z = seconde_node[2]+0.01;
+            target_pose.position.z = seconde_node[2]+0.015;
             waypoints.push_back(target_pose);
             moveCartesian(waypoints);
             waypoints.clear();
@@ -1092,12 +1185,12 @@ void reinforcement::seconde_layer_hori()
             movejoint6(1.570796327);
             }
             break;
-        case 7:
+        case 3:
             {target_pose.position.x = seconde_node[0]+0.098;
             waypoints.push_back(target_pose);
             target_pose.position.y = seconde_node[1]-0.192;
             waypoints.push_back(target_pose);
-            target_pose.position.z = seconde_node[2]+0.01;
+            target_pose.position.z = seconde_node[2]+0.02;
             waypoints.push_back(target_pose);
             moveCartesian(waypoints);
             waypoints.clear();
@@ -1108,6 +1201,7 @@ void reinforcement::seconde_layer_hori()
         default:
             break;
         }
+        sleep.sleep();
         gripper_open();
         sleep.sleep();
      
@@ -1116,13 +1210,8 @@ void reinforcement::seconde_layer_hori()
         waypoints.push_back(target_pose);
         moveCartesian(waypoints);
         waypoints.clear();
-        arm.setNamedTarget("home");
-        arm.move();
-// ************************
-        // ros::Duration(10).sleep();
-        // ft_bias_client.call(setBias_client);
-        // std::cout<<setBias_client.response.success<<std::endl;
-// ************************  
+        arm.setNamedTarget("home_hori");
+        arm.move(); 
     }    
 }
 // ****************************************功能函数*********************************************
@@ -1551,10 +1640,10 @@ void reinforcement::movejoint6(double rad)
     arm.move();
     ros::Duration(1).sleep();
 }
-bool reinforcement::space_arc_ver(geometry_msgs::Pose &target_pose)
+bool reinforcement::space_arc_ver(geometry_msgs::Pose &target_pose,double &r)
 {   
     double radians = 30 * M_PI / 180.0; // 将角度转换为弧度
-    double r = target_pose.position.z - first_node[2];
+    // double r = target_pose.position.z - first_node[2];
     std::vector<geometry_msgs::Pose> waypoints;
     geometry_msgs::Pose target_pose_arc;
     Eigen::Quaterniond quaternion;

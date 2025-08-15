@@ -66,6 +66,7 @@ private:
     Matrix3d M_,D_,K_; // 导纳参数
     ros::Rate loop_rate; // 循环频率 用于积分计算
     vector3d first_node; // 第一层首个node放置的坐标
+    vector3d vertical[4]; // 4个ver的放置后的坐标
     vector3d seconde_node; // 第二层首个node放置的坐标
     ros::Subscriber hole_find_movestatus; // 订阅moveit状态信息
     moveit_msgs::ExecuteTrajectoryActionFeedback mvgr_status; // moveit状态信息
@@ -117,7 +118,7 @@ public:
     void palce_hori(int index);
     void fixtrajectorytime(moveit_msgs::RobotTrajectory &trajectory); //修改笛卡尔轨迹
     // void get_hole_pos(double &y);
-    bool space_arc_ver(geometry_msgs::Pose &target_pose); // 空间圆弧
+    bool space_arc_ver(geometry_msgs::Pose &target_pose,double &r); // 空间圆弧
     geometry_msgs::Quaternion rotation_grasp(double rz,int cls); // 旋转抓取 
     void movejoint6(double rad);
     void touch_ver();// 接触竖杆

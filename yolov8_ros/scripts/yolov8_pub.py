@@ -336,7 +336,7 @@ class getBox():
         # 用均值替代深度为0的点
         tepm_x1 = x1
         temp_y1 = y1
-        points = (self.depth_img[(temp_y1-1),(tepm_x1-50):tepm_x1])
+        points = (self.depth_img[(temp_y1-3),(tepm_x1-50):tepm_x1])
         points_ = points[points > 0]
         depth_depth = np.mean(points_) if len(points_) > 0 else 0
 
